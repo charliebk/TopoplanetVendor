@@ -1,0 +1,121 @@
+name: windows-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Choose which Windows package to build
+        required: true
+        type: choice
+        default: both
+        options:
+          - portable
+          - installer
+          - both
+  workflow_call:
+    inputs:
+      package:
+        required: false
+        type: string
+        default: both
+    secrets:
+      CSC_LINK:
+        required: false
+      CSC_KEY_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-portable:
+    if: ${{ inputs.package == 'portable' || inputs.package == 'both' }}
+    runs-on: windows-latest
+    name: Build Portable EXE
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build app bundle
+        working-directory: frontend
+        run: npm run build:pre
+
+      - name: Clean release output
+        working-directory: frontend
+        shell: cmd
+        run: if exist release rmdir /s /q release
+
+      - name: Package Portable EXE
+        working-directory: frontend
+        run: npx electron-builder --config=buildAssets/builder/config-win.js --win portable --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets['CSC_LINK'] }}
+          CSC_KEY_PASSWORD: ${{ secrets['CSC_KEY_PASSWORD'] }}
+
+      - name: Upload Portable artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: |
+            frontend/release/**/*Portable.exe
+            frontend/release/**/win-unpacked/**
+            frontend/release/**/builder-*.yml
+          if-no-files-found: error
+
+  build-installer:
+    if: ${{ inputs.package == 'installer' || inputs.package == 'both' }}
+    runs-on: windows-latest
+    name: Build Installer EXE (NSIS)
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build app bundle
+        working-directory: frontend
+        run: npm run build:pre
+
+      - name: Clean release output
+        working-directory: frontend
+        shell: cmd
+        run: if exist release rmdir /s /q release
+
+      - name: Package NSIS installer
+        working-directory: frontend
+        run: npx electron-builder --config=buildAssets/builder/config-win-nsis.js --win nsis --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets['CSC_LINK'] }}
+          CSC_KEY_PASSWORD: ${{ secrets['CSC_KEY_PASSWORD'] }}
+
+      - name: Upload NSIS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-nsis
+          path: |
+            frontend/release/**/*.exe
+            frontend/release/**/win-unpacked/**
+            frontend/release/**/builder-*.yml
+          if-no-files-found: error

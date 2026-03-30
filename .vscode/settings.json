@@ -1,0 +1,32 @@
+{
+  "workbench.settings.useSplitJSON": true,
+  "eslint.format.enable": true,
+  "eslint.lintTask.enable": false,
+  "eslint.codeActionsOnSave.rules": null,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.validate": ["javascript", "vue"],
+  "files.autoSave": "afterDelay",
+  "editor.formatOnSave": true,
+  "editor.wordWrap": "on",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "editor.tabSize": 2,
+  "prettier.embeddedLanguageFormatting": "off",
+  "prettier.enable": true,
+  "files.associations": {
+    "*.mjs": "javascript",
+    "*.cjs": "javascript",
+    "*.mts": "typescript"
+  },
+  "editor.codeLens": true,
+  "java.referencesCodeLens.enabled": true,
+  "java.implementationsCodeLens.enabled": true,
+  "java.import.gradle.enabled": true,
+  "java.import.gradle.nestedProjectSearchDepth": 5,
+  "java.import.gradle.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.10.7-hotspot",
+  "java.project.sourcePaths": ["backend/src/main/java"]
+}
