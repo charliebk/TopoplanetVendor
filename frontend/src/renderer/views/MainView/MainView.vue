@@ -28,9 +28,6 @@
           App Version: <strong>{{ appVersion }}</strong>
         </p>
         <p class="my-2">
-          <strong>Backend message:</strong> {{ helloWorldMessage }}
-        </p>
-        <p class="my-2">
           <PrimeTag
             value="PrimeVue OK"
             severity="success"
@@ -101,7 +98,6 @@ import {
   mdiFolderOpen,
   mdiGithub
 } from '@mdi/js'
-import { useAppMessageStore } from '@/renderer/stores'
 import ActionIconButton from '@/renderer/components/common/ActionIconButton.vue'
 
 const { t, locale, availableLocales } = useI18n()
@@ -109,17 +105,6 @@ const theme = useTheme()
 const languages = ref(['en'])
 const appVersion = ref('Unknown')
 const selectedFile = ref('')
-const helloWorldMessage = ref('Loading message from backend...')
-const appMessageStore = useAppMessageStore()
-
-const loadHelloWorldMessage = async (): Promise<void> => {
-  try {
-    const appMessage = await appMessageStore.fetchHelloWorldMessage()
-    helloWorldMessage.value = appMessage.value
-  } catch {
-    helloWorldMessage.value = 'Backend unavailable. Could not load HELLO_WORLD.'
-  }
-}
 
 const getApplicationVersionFromMainProcess = (): void => {
   window.mainApi.invoke('msgRequestGetVersion').then((result: string) => {
@@ -153,6 +138,5 @@ const handleOpenFile = async () => {
 onMounted((): void => {
   languages.value = availableLocales
   getApplicationVersionFromMainProcess()
-  loadHelloWorldMessage()
 })
 </script>

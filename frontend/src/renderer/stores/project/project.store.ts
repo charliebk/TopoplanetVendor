@@ -1,21 +1,6 @@
 import { defineStore } from 'pinia'
-import { buildApiUrl } from '@/renderer/stores/client'
-
-export interface ProjectPayload {
-  code: string
-  name: string
-  description?: string | null
-}
-
-export interface ProjectResponse {
-  id: number
-  code: string
-  name: string
-  description: string | null
-  deleted: boolean
-  createdAt: string
-  updatedAt: string
-}
+import { buildApiUrl } from '@/client'
+import type { ProjectPayload, ProjectResponse } from './project.types'
 
 export const useProjectStore = defineStore('backend-project', () => {
   const endpoints = {

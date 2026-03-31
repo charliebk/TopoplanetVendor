@@ -1,4 +1,5 @@
 # Hoja de ruta final por sprints — Evaluador de vendors standalone
+
 **Stack:** Electron + Vue 3 + PrimeVue + TypeScript + Javalin + SQLite  
 **Objetivo:** sustituir completamente el evaluador basado en Excel por una aplicación standalone ejecutable, multi-proyecto, relacional, configurable y mantenible.
 
@@ -30,8 +31,8 @@ Eso, en SQLite, se traduce en:
 - los vendors son filas;
 - las respuestas son filas;
 - los productos son filas;
-- los pesos son filas;
-- los evaluadores son filas;
+- las variables por proyecto son filas;
+- las opciones de respuesta por pregunta son filas;
 - las métricas se calculan por SQL + servicio de agregación.
 
 ---
@@ -42,8 +43,9 @@ La aplicación debe permitir:
 
 - gestionar múltiples proyectos desde una pantalla inicial tipo VS Code;
 - crear, abrir, duplicar, archivar e importar proyectos;
-- configurar por proyecto variables, dominios, categorías, preguntas funcionales, preguntas técnicas, escalas, pesos, evaluadores, vendors, productos y textos multiidioma;
+- configurar por proyecto variables genéricas (como category, questionType y requirementLevel), preguntas, escalas, pesos, vendors, productos y textos multiidioma;
 - capturar respuestas por vendor;
+- soportar escenarios con respuestas faltantes y respuestas no aplicables sin romper el cálculo de métricas;
 - calcular métricas: frecuencia, media, media ponderada, desviación estándar, cobertura, score total y ranking;
 - mostrar dashboards por proyecto;
 - versionar cambios de configuración;
@@ -55,17 +57,19 @@ La aplicación debe permitir:
 ## 4. Pantallas objetivo
 
 ### 4.1 Pantalla 1 — Project Hub
+
 Pantalla inicial tipo launcher, similar al arranque de VS Code.
 
 ### 4.2 Pantalla 2 — Workspace del proyecto
+
 Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 
 ### 4.3 Módulos visibles del workspace
+
 - Dashboard
 - Resumen Ejecutivo
 - Vendors
 - Productos
-- Evaluadores
 - Preguntas
 - Requisitos Funcionales
 - Requisitos Técnicos
@@ -77,6 +81,7 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 - Auditoría
 
 ### 4.4 Componentes PrimeVue que sí debemos usar
+
 - `DataTable`
 - `TreeTable`
 - `Dialog`
@@ -108,6 +113,7 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 ## 5. Modelo relacional objetivo en SQLite
 
 ### 5.1 Tabla `project`
+
 - `id`
 - `code`
 - `name`
@@ -118,6 +124,7 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 - `archived_at`
 
 ### 5.2 Tabla `project_version`
+
 - `id`
 - `project_id`
 - `version_number`
@@ -127,39 +134,91 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 - `created_by`
 - `is_active`
 
-### 5.3 Tabla `domain`
+### 5.3 Tabla `vendor`
+
 - `id`
 - `project_id`
 - `code`
 - `name`
-- `sort_order`
+- `vendor_group`
+- `notes`
 - `is_active`
 
-### 5.4 Tabla `question_category`
+### 5.4 Tabla `product`
+
 - `id`
 - `project_id`
-- `domain_id`
+- `vendor_id`
 - `code`
 - `name`
-- `question_type`
-- `sort_order`
+- `product_type`
+- `product_module`
+- `notes`
 - `is_active`
 
-### 5.5 Tabla `question`
+### 5.5 Tabla `project_variable_type`
+
 - `id`
 - `project_id`
-- `category_id`
-- `legacy_code`
 - `code`
+- `name`
+- `description`
+- `is_active`
+
+### 5.6 Tabla `project_variable_option`
+
+- `id`
+- `project_id`
+- `variable_type_id`
+- `code`
+- `name`
+- `score_value`
+- `sort_order`
+- `notes`
+- `is_active`
+
+### 5.7 Tabla `question`
+
+- `id`
+- `project_id`
+- `question_code`
 - `title`
-- `description`
-- `question_type`
+- `question_type_option_id`
+- `requirement_level_option_id`
+- `category_option_id`
+- `max_score`
 - `is_required`
-- `is_scored`
+- `is_active`
 - `sort_order`
+- `string_response_legacy`
+
+### 5.8 Tabla `question_response_option`
+
+- `id`
+- `question_id`
+- `code`
+- `label`
+- `score_value`
+- `sort_order`
+- `is_not_applicable`
 - `is_active`
 
-### 5.6 Tabla `scale`
+### 5.9 Tabla `response`
+
+- `id`
+- `project_id`
+- `vendor_id`
+- `product_id`
+- `question_id`
+- `response_option_id`
+- `response_option_code`
+- `resolved_score`
+- `response_status` (ANSWERED, NO_RESPONSE, NOT_APPLICABLE)
+- `comment`
+- `responded_at_utc`
+
+### 5.10 Tabla `scale`
+
 - `id`
 - `project_id`
 - `code`
@@ -167,7 +226,8 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 - `description`
 - `is_active`
 
-### 5.7 Tabla `scale_option`
+### 5.11 Tabla `scale_option`
+
 - `id`
 - `scale_id`
 - `code`
@@ -177,76 +237,31 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 - `sort_order`
 - `is_default`
 
-### 5.8 Tabla `vendor`
-- `id`
-- `project_id`
-- `code`
-- `name`
-- `vendor_group`
-- `notes`
-- `is_active`
+### 5.12 Tabla `question_weight`
 
-### 5.9 Tabla `vendor_product`
-- `id`
-- `project_id`
-- `vendor_id`
-- `product_name`
-- `product_type`
-- `product_module`
-- `notes`
-- `is_active`
-
-### 5.10 Tabla `evaluator`
-- `id`
-- `project_id`
-- `code`
-- `name`
-- `role_name`
-- `weight`
-- `is_active`
-
-### 5.11 Tabla `question_weight`
 - `id`
 - `project_id`
 - `question_id`
 - `weight`
 - `justification`
 
-### 5.12 Tabla `category_weight`
+### 5.13 Tabla `category_weight`
+
 - `id`
 - `project_id`
-- `category_id`
+- `category_option_id`
 - `weight`
 
-### 5.13 Tabla `response`
-- `id`
-- `project_id`
-- `vendor_id`
-- `question_id`
-- `evaluator_id`
-- `scale_option_id`
-- `free_text`
-- `evidence_url`
-- `confidence_level`
-- `created_at`
-- `updated_at`
+### 5.14 Tabla `localized_text`
 
-### 5.14 Tabla `project_variable`
-- `id`
-- `project_id`
-- `var_key`
-- `var_value`
-- `var_type`
-- `description`
-
-### 5.15 Tabla `localized_text`
 - `id`
 - `project_id`
 - `text_key`
 - `lang_code`
 - `text_value`
 
-### 5.16 Tabla `audit_log`
+### 5.15 Tabla `audit_log`
+
 - `id`
 - `project_id`
 - `entity_name`
@@ -257,15 +272,34 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 - `created_at`
 - `created_by`
 
+### 5.16 Validación de validez del modelo genérico
+
+Sí, esta estructura es válida para un evaluador de métricas genérico si se respetan estas reglas:
+
+1. Toda clasificación funcional debe salir de `project_variable_type` + `project_variable_option` (sin enums fijos en código).
+2. `question` nunca almacena taxonomías hardcodeadas, solo referencias a opciones del proyecto.
+3. `response` debe soportar explícitamente ausencia de respuesta y no aplicabilidad.
+4. Las métricas se calculan en backend/SQL a partir de `resolved_score`, pesos y estado de respuesta.
+5. El frontend solo consume contratos API y nunca interpreta fórmulas complejas.
+
+Límites y extensibilidad para "todas las posibilidades":
+
+- Si en el futuro se necesitan fórmulas de scoring configurables por proyecto, añadir `metric_definition` y `metric_formula`.
+- Si se necesita congelar resultados por versión, añadir `metric_snapshot` versionado por `project_version`.
+- Si vuelve el rol evaluador, incorporar dimensión adicional sin romper el núcleo actual.
+
 ### 5.17 Tablas o vistas de agregación
+
 No persistiría todo desde el minuto 1.
 
 Mi recomendación:
+
 - tablas base normalizadas
 - views SQL para agregados
 - servicio Java para snapshots si luego hace falta performance
 
 Vistas:
+
 - `vw_vendor_score_summary`
 - `vw_vendor_category_score`
 - `vw_vendor_question_score`
@@ -275,19 +309,30 @@ Vistas:
 
 ## 6. Índices obligatorios
 
-- `idx_question_project_type`
-- `idx_question_category`
+- `idx_question_project`
+- `idx_question_type_option`
+- `idx_question_category_option`
+- `idx_question_requirement_option`
 - `idx_vendor_project`
+- `idx_product_vendor`
 - `idx_response_project`
 - `idx_response_vendor`
+- `idx_response_product`
 - `idx_response_question`
-- `idx_response_evaluator`
-- `idx_response_vendor_question`
+- `idx_response_status`
+- `idx_response_vendor_product_question`
 - `idx_scale_option_scale`
 - `idx_audit_project_entity`
+- `idx_var_type_project`
+- `idx_var_option_type`
 
 Y además un índice compuesto serio en `response`:
-- `(project_id, vendor_id, question_id, evaluator_id)`
+
+- `(project_id, vendor_id, product_id, question_id)`
+
+Y un índice único recomendado para evitar duplicados funcionales:
+
+- `UNIQUE(project_id, vendor_id, product_id, question_id)`
 
 ---
 
@@ -310,14 +355,12 @@ Nueva expansión por dominios:
 manager/
   project/
   projectversion/
-  domain/
-  questioncategory/
   question/
   scale/
   scaleoption/
+  variable/
   vendor/
-  vendorproduct/
-  evaluator/
+  product/
   response/
   weight/
   dashboard/
@@ -330,6 +373,7 @@ io/
 ```
 
 Cada dominio con:
+
 - `Controller/`
 - `DTO/`
 - `Repository/`
@@ -348,7 +392,6 @@ frontend/src/renderer/
     dashboard/
     vendors/
     products/
-    evaluators/
     questions/
     responses/
     settings/
@@ -361,7 +404,6 @@ frontend/src/renderer/
     dashboard/
     vendors/
     products/
-    evaluators/
     questions/
     responses/
     settings/
@@ -370,7 +412,6 @@ frontend/src/renderer/
     dashboard/
     vendor/
     product/
-    evaluator/
     question/
     response/
     settings/
@@ -403,22 +444,27 @@ frontend/src/renderer/
 # Sprint 0 — Blindar la arquitectura base y congelar convenciones
 
 ## Objetivo
+
 Partir del template actual y dejar cerradas las reglas del proyecto antes de empezar a programar cosas.
 
 ## Tablas implicadas
+
 Ninguna.
 
 ## Backend implicado
+
 - `App.java`
 - `ControllerRegister.java`
 - `DatabaseSchemaManager.java`
 
 ## Frontend implicado
+
 - `frontend/src/renderer/router`
 - `frontend/src/renderer/plugins`
 - `frontend/src/renderer/stores`
 
 ## Trabajo exacto
+
 - Revisar template actual.
 - Crear `docs/architecture.md`
 - Crear `docs/conventions.md`
@@ -426,6 +472,7 @@ Ninguna.
 - Documentar naming, flujo Electron↔Javalin↔SQLite y reglas REST.
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero congelar la arquitectura base de un proyecto Electron + Vue 3 + PrimeVue + Javalin + SQLite ya existente.
 
@@ -447,6 +494,7 @@ Devuélveme contenido completo archivo por archivo.
 ```
 
 ## Criterio de aceptación
+
 - arquitectura congelada
 - convenciones escritas
 - equipo sin margen para improvisar
@@ -456,44 +504,68 @@ Devuélveme contenido completo archivo por archivo.
 # Sprint 1 — Diseñar el modelo relacional completo en SQLite
 
 ## Objetivo
+
 Pasar de idea funcional a modelo de datos real.
 
 ## Tablas implicadas
+
 Todas las tablas base del apartado 5.
 
 ## Backend implicado
+
 - `db/DatabaseSchemaManager.java`
 - carpeta nueva `manager/*/Query`
 
 ## Frontend implicado
-Ninguno todavía.
+
+- `frontend/src/renderer/stores/*`
+- `frontend/src/renderer/views/*` (solo cableado minimo)
 
 ## Trabajo exacto
+
 - Definir DDL completo.
 - Definir claves foráneas.
 - Definir índices.
 - Definir reglas `ON DELETE` y `ON UPDATE`.
+- Definir tablas de variables genéricas por proyecto.
+- Definir unicidad funcional de respuestas por vendor + product + question.
+- Definir semántica de estados de respuesta (ANSWERED, NO_RESPONSE, NOT_APPLICABLE).
+- Validar que el modelo se mantiene genérico y no orientado solo a software.
 - Crear `db/schema/V001__initial_schema.sql`
+- Crear estructura backend por tabla con capas `Controller/DTO/Repository/Query/Services`.
+- Eliminar módulos legacy no usados (`manager/appmessage`, `manager/health`, etc.).
+- Mantener únicamente `io/project` como área temporal a revisar después.
+- Crear stores Pinia nuevos por dominio de tabla para cableado frontend.
+- Retirar stores/view wiring legacy que dependían del modelo antiguo.
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero diseñar el esquema SQLite completo para una aplicación de evaluación de vendors multi-proyecto.
+
+Contexto funcional:
+- el proyecto es genérico (sirve para evaluar cualquier dominio)
+- un proyecto tiene muchos vendors
+- un vendor tiene muchos products
+- un proyecto tiene variables configurables (Category, QuestionType, RequirementLevel, etc.)
+- cada question pertenece al proyecto y usa esas variables
+- cada response corresponde a vendor + product + question
+- evaluator no forma parte de esta fase
 
 Necesito estas entidades:
 - project
 - project_version
-- domain
-- question_category
+- vendor
+- product
+- project_variable_type
+- project_variable_option
 - question
+- question_response_option
+- response
 - scale
 - scale_option
-- vendor
-- vendor_product
-- evaluator
 - question_weight
 - category_weight
-- response
-- project_variable
 - localized_text
 - audit_log
 
@@ -502,41 +574,57 @@ Tareas:
 2. Añade primary keys, foreign keys e índices.
 3. Usa nombres claros y consistentes.
 4. Piensa en integridad relacional real.
-5. Prepara el SQL para migración inicial.
-6. No uses cosas específicas de PostgreSQL.
-7. Devuélveme un archivo V001__initial_schema.sql completo.
+5. Incluye índice único para (project_id, vendor_id, product_id, question_id) en response.
+6. Prepara el SQL para migración inicial.
+7. No uses cosas específicas de PostgreSQL.
+8. Devuélveme un archivo V001__initial_schema.sql completo.
+9. Incluye soporte para estado de respuesta y casos no respondidos/no aplicables.
 ```
 
 ## Criterio de aceptación
+
 - esquema ejecutable
-- relaciones coherentes
+- relaciones coherentes project -> vendor -> product y project -> question
+- variables de negocio configurables por proyecto
+- respuestas únicas por vendor + product + question
+- manejo explícito de no respuesta y no aplicable
+- validación explícita de genericidad del modelo
 - índices mínimos resueltos
+- backend inicial cableado al nuevo modelo por dominios
+- frontend con stores nuevos base para evolucionar pantallas
+- legacy fuera de uso, excepto `io/project` en transición
 
 ---
 
 # Sprint 2 — Crear sistema de migraciones y bootstrap de base de datos
 
 ## Objetivo
+
 Que SQLite no sea un archivo mágico, sino una base controlada por migraciones.
 
 ## Tablas implicadas
+
 - `schema_version`
 - resto del esquema inicial
 
 ## Backend implicado
+
 - `DatabaseSchemaManager.java`
 - `db/migration/*`
 
 ## Frontend implicado
+
 Ninguno.
 
 ## Trabajo exacto
+
 - decidir estrategia de migraciones
 - crear tabla de control de versión
 - aplicar migraciones idempotentes al arranque
 - dejar seeds mínimos
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero implementar un sistema simple y robusto de migraciones SQLite en un backend Javalin.
 
@@ -551,6 +639,7 @@ Tareas:
 ```
 
 ## Criterio de aceptación
+
 - al arrancar se crea la base
 - se registran migraciones aplicadas
 - arranque repetido no rompe nada
@@ -560,22 +649,27 @@ Tareas:
 # Sprint 3 — Módulo Project Hub
 
 ## Objetivo
+
 Construir la primera ventana tipo VS Code para seleccionar proyecto.
 
 ## Tablas implicadas
+
 - `project`
 - `project_version`
 
 ## Backend implicado
+
 - `manager/project/*`
 - `manager/projectversion/*`
 
 ## Frontend implicado
+
 - `views/ProjectHubView`
 - `components/project-hub/*`
 - `stores/project/*`
 
 ## Trabajo exacto
+
 - CRUD de proyectos
 - listado de recientes
 - crear proyecto
@@ -584,6 +678,7 @@ Construir la primera ventana tipo VS Code para seleccionar proyecto.
 - abrir proyecto
 
 ## PrimeVue
+
 - `DataTable`
 - `Dialog`
 - `Toolbar`
@@ -593,6 +688,7 @@ Construir la primera ventana tipo VS Code para seleccionar proyecto.
 - `Button`
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir el módulo Project Hub para una app Electron + Vue + Javalin + SQLite.
 
@@ -620,6 +716,7 @@ Quiero implementación archivo por archivo.
 ```
 
 ## Criterio de aceptación
+
 - abre la app y se ve el launcher
 - se puede crear un proyecto
 - se puede abrir un proyecto
@@ -629,15 +726,19 @@ Quiero implementación archivo por archivo.
 # Sprint 4 — Shell del workspace del proyecto
 
 ## Objetivo
+
 Entrar en un proyecto y tener layout real de aplicación.
 
 ## Tablas implicadas
+
 - `project`
 
 ## Backend implicado
+
 - lectura de proyecto activo
 
 ## Frontend implicado
+
 - `ProjectWorkspaceView.vue`
 - `components/layout/*`
 - router
@@ -645,12 +746,14 @@ Entrar en un proyecto y tener layout real de aplicación.
 - sidebar
 
 ## Trabajo exacto
+
 - layout lateral
 - header de proyecto
 - navegación por módulos
 - tabs o zonas principales
 
 ## PrimeVue
+
 - `Menubar`
 - `PanelMenu`
 - `Breadcrumb`
@@ -658,6 +761,7 @@ Entrar en un proyecto y tener layout real de aplicación.
 - `TabView`
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir el shell del workspace al abrir un proyecto.
 
@@ -676,43 +780,49 @@ No metas todavía lógica de módulos internos.
 ```
 
 ## Criterio de aceptación
+
 - al abrir proyecto se entra en workspace
 - layout estable
 - navegación lista para crecer
 
 ---
 
-# Sprint 5 — Catálogos base: dominios, categorías, escalas e idiomas
+# Sprint 5 — Catalogos base: variables por proyecto, escalas e idiomas
 
 ## Objetivo
+
 Crear la base configurable del sistema.
 
 ## Tablas implicadas
-- `domain`
-- `question_category`
+
+- `project_variable_type`
+- `project_variable_option`
 - `scale`
 - `scale_option`
 - `localized_text`
 
 ## Backend implicado
-- `manager/domain/*`
-- `manager/questioncategory/*`
+
+- `manager/variable/*`
 - `manager/scale/*`
 - `manager/scaleoption/*`
 - `manager/settings/*`
 
 ## Frontend implicado
+
 - `views/settings/*`
 - `stores/settings/*`
 
 ## Trabajo exacto
-- CRUD de dominios
-- CRUD de categorías
+
+- CRUD de tipos de variable
+- CRUD de opciones por tipo
 - CRUD de escalas
 - CRUD de opciones de escala
 - gestión básica de idiomas
 
 ## PrimeVue
+
 - `DataTable`
 - `Dialog`
 - `Accordion`
@@ -720,16 +830,17 @@ Crear la base configurable del sistema.
 - `InputNumber`
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir el módulo de configuración base del evaluador.
 
 Contexto:
-cada proyecto necesita dominios, categorías, escalas y opciones de escala configurables.
+cada proyecto necesita variables configurables (Category, QuestionType, RequirementLevel), escalas y opciones de escala.
 
 Tareas backend:
-1. Crear módulos domain, questioncategory, scale y scaleoption.
+1. Crear módulos variable, scale y scaleoption.
 2. Implementar CRUD REST.
-3. Validar relaciones project -> domain -> category.
+3. Validar relaciones project -> variable_type -> variable_option.
 4. Evitar borrar registros si tienen dependencias activas.
 
 Tareas frontend:
@@ -742,7 +853,8 @@ Dame implementación archivo por archivo.
 ```
 
 ## Criterio de aceptación
-- se pueden configurar dominios y categorías
+
+- se pueden configurar variables por proyecto
 - se puede definir una escala de respuesta real
 
 ---
@@ -750,21 +862,26 @@ Dame implementación archivo por archivo.
 # Sprint 6 — Módulo de preguntas
 
 ## Objetivo
+
 Gestionar preguntas funcionales y técnicas como entidad seria.
 
 ## Tablas implicadas
+
 - `question`
-- `question_category`
+- `project_variable_option`
 
 ## Backend implicado
+
 - `manager/question/*`
 
 ## Frontend implicado
+
 - `views/questions/*`
 - `components/questions/*`
 - `stores/question/*`
 
 ## Trabajo exacto
+
 - alta/edición/baja lógica
 - filtro por tipo
 - filtro por categoría
@@ -773,6 +890,7 @@ Gestionar preguntas funcionales y técnicas como entidad seria.
 - importación futura preparada
 
 ## PrimeVue
+
 - `DataTable`
 - `Column`
 - `MultiSelect`
@@ -780,11 +898,12 @@ Gestionar preguntas funcionales y técnicas como entidad seria.
 - `Checkbox`
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir el módulo de preguntas del evaluador.
 
 Contexto:
-hay preguntas funcionales y técnicas por proyecto, agrupadas por categoría y dominio.
+hay preguntas funcionales y técnicas por proyecto, agrupadas por categorías configurables.
 
 Tareas:
 1. Crear backend manager/question completo.
@@ -798,6 +917,7 @@ Quiero código completo por archivo.
 ```
 
 ## Criterio de aceptación
+
 - preguntas funcionales y técnicas viven en la misma arquitectura
 - no hay que tocar código para añadir preguntas nuevas
 
@@ -806,28 +926,34 @@ Quiero código completo por archivo.
 # Sprint 7 — Módulo de vendors y productos
 
 ## Objetivo
+
 Separar bien vendor de producto, que es donde Excel solía convertirse en barro.
 
 ## Tablas implicadas
+
 - `vendor`
-- `vendor_product`
+- `product`
 
 ## Backend implicado
+
 - `manager/vendor/*`
-- `manager/vendorproduct/*`
+- `manager/product/*`
 
 ## Frontend implicado
+
 - `views/vendors/*`
 - `views/products/*`
 - `stores/vendor/*`
 - `stores/product/*`
 
 ## Trabajo exacto
+
 - CRUD vendor
 - CRUD productos por vendor
 - vista maestro-detalle
 
 ## PrimeVue
+
 - `DataTable`
 - `TreeTable` opcional
 - `Dialog`
@@ -835,6 +961,7 @@ Separar bien vendor de producto, que es donde Excel solía convertirse en barro.
 - `Badge`
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir los módulos de vendors y productos en una app de evaluación de software.
 
@@ -845,7 +972,7 @@ Reglas:
 
 Tareas backend:
 - crear manager/vendor
-- crear manager/vendorproduct
+- crear manager/product
 - implementar endpoints CRUD y listados por project y por vendor
 
 Tareas frontend:
@@ -858,49 +985,49 @@ Quiero implementación archivo por archivo.
 ```
 
 ## Criterio de aceptación
+
 - se puede registrar Bentley mañana y 20 productos si hace falta
 - no cambia la estructura del sistema
 
 ---
 
-# Sprint 8 — Módulo de evaluadores y pesos
+# Sprint 8 — Módulo de pesos (sin evaluadores)
 
 ## Objetivo
-Modelar correctamente el peso de evaluadores y el peso de preguntas/categorías.
+
+Modelar correctamente pesos por categoría y por pregunta.
 
 ## Tablas implicadas
-- `evaluator`
+
 - `question_weight`
 - `category_weight`
 
 ## Backend implicado
-- `manager/evaluator/*`
+
 - `manager/weight/*`
 
 ## Frontend implicado
-- `views/evaluators/*`
+
 - `views/settings/weights/*`
-- `stores/evaluator/*`
 - `stores/settings/*`
 
 ## Trabajo exacto
-- CRUD evaluadores
-- peso por evaluador
+
 - peso por categoría
 - peso por pregunta
 - validaciones de suma de pesos
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir el sistema de pesos del evaluador.
 
 Necesito:
-- evaluadores con peso
 - pesos por categoría
 - pesos por pregunta
 
 Tareas:
-1. Diseña backend para evaluator y weight.
+1. Diseña backend para weight.
 2. Implementa validaciones de negocio para evitar pesos negativos.
 3. Añade endpoint de validación global de consistencia.
 4. Crea frontend con tablas editables y mensajes claros.
@@ -910,6 +1037,7 @@ Quiero una solución robusta y auditable.
 ```
 
 ## Criterio de aceptación
+
 - pesos configurables
 - errores visibles si la configuración es incoherente
 
@@ -918,30 +1046,37 @@ Quiero una solución robusta y auditable.
 # Sprint 9 — Módulo de captura de respuestas
 
 ## Objetivo
+
 Construir el corazón de la app.
 
 ## Tablas implicadas
+
 - `response`
 - `question`
 - `vendor`
-- `evaluator`
+- `product`
+- `question_response_option`
 - `scale_option`
 
 ## Backend implicado
+
 - `manager/response/*`
 
 ## Frontend implicado
+
 - `views/responses/*`
 - `components/responses/*`
 - `stores/response/*`
 
 ## Trabajo exacto
+
 - grid de captura
-- filtros por vendor, tipo, categoría, evaluador
+- filtros por vendor, product, tipo y categoría
 - guardado masivo
 - edición de comentario y evidencia
 
 ## PrimeVue
+
 - `DataTable`
 - `Dropdown`
 - `Textarea`
@@ -950,11 +1085,12 @@ Construir el corazón de la app.
 - `ConfirmDialog`
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir el módulo de captura de respuestas del evaluador.
 
 Contexto:
-cada respuesta pertenece a project, vendor, question, evaluator y scale_option.
+cada respuesta pertenece a project, vendor, product, question y question_response_option.
 
 Objetivo:
 crear una pantalla usable para evaluar muchas preguntas sin sufrir.
@@ -962,7 +1098,7 @@ crear una pantalla usable para evaluar muchas preguntas sin sufrir.
 Tareas backend:
 1. Implementa manager/response con create, update, bulk-upsert y list filtrado.
 2. Usa bulk save para mejorar rendimiento.
-3. Valida que project, vendor, question, evaluator y scale_option existan.
+3. Valida que project, vendor, product, question y question_response_option existan.
 
 Tareas frontend:
 1. Crea una vista tipo grid con filtros por vendor, tipo y categoría.
@@ -975,6 +1111,7 @@ Dame implementación archivo por archivo.
 ```
 
 ## Criterio de aceptación
+
 - ya se pueden evaluar vendors de verdad
 - el sistema deja de ser maqueta
 
@@ -983,24 +1120,28 @@ Dame implementación archivo por archivo.
 # Sprint 10 — Cálculo de métricas y vistas SQL de agregación
 
 ## Objetivo
+
 Mover el cerebro numérico al modelo relacional.
 
 ## Tablas implicadas
+
 - `response`
 - `question_weight`
 - `category_weight`
-- `evaluator`
 - vistas `vw_*`
 
 ## Backend implicado
+
 - `manager/dashboard/*`
 - `manager/response/Query/*`
 - `manager/dashboard/Services/*`
 
 ## Frontend implicado
+
 Ninguno todavía.
 
 ## Trabajo exacto
+
 - calcular score base
 - media
 - media ponderada
@@ -1011,6 +1152,7 @@ Ninguno todavía.
 - servicios Java para lectura
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir el motor de métricas de un evaluador relacional en SQLite.
 
@@ -1033,6 +1175,7 @@ Tareas:
 ```
 
 ## Criterio de aceptación
+
 - métricas coherentes
 - ranking ya disponible por backend
 
@@ -1041,23 +1184,28 @@ Tareas:
 # Sprint 11 — Dashboard ejecutivo por proyecto
 
 ## Objetivo
+
 Construir la capa visible de decisión.
 
 ## Tablas implicadas
+
 - `vw_vendor_score_summary`
 - `vw_vendor_category_score`
 - `vw_vendor_question_score`
 - `vw_project_dashboard_summary`
 
 ## Backend implicado
+
 - `manager/dashboard/*`
 
 ## Frontend implicado
+
 - `views/dashboard/*`
 - `components/dashboard/*`
 - `stores/dashboard/*`
 
 ## Trabajo exacto
+
 - KPI cards
 - ranking
 - gráfico por vendor
@@ -1066,6 +1214,7 @@ Construir la capa visible de decisión.
 - distribución de respuestas
 
 ## PrimeVue
+
 - `Chart`
 - `Panel`
 - `Card`
@@ -1073,6 +1222,7 @@ Construir la capa visible de decisión.
 - `DataTable`
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir el dashboard ejecutivo del proyecto.
 
@@ -1095,6 +1245,7 @@ Quiero implementación archivo por archivo.
 ```
 
 ## Criterio de aceptación
+
 - dashboard útil de verdad
 - no solo bonito, también interpretable
 
@@ -1103,22 +1254,27 @@ Quiero implementación archivo por archivo.
 # Sprint 12 — Resumen ejecutivo y ficha comparativa de vendor
 
 ## Objetivo
+
 Crear una lectura más humana que el dashboard bruto.
 
 ## Tablas implicadas
+
 - vistas agregadas
 - `vendor`
-- `vendor_product`
+- `product`
 
 ## Backend implicado
+
 - `manager/dashboard/*`
 - `manager/vendor/*`
 
 ## Frontend implicado
+
 - `views/vendors/VendorDetailView.vue`
 - `components/dashboard/*`
 
 ## Trabajo exacto
+
 - ficha por vendor
 - resumen por fortalezas
 - top categorías
@@ -1126,6 +1282,7 @@ Crear una lectura más humana que el dashboard bruto.
 - preguntas críticas sin cobertura
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero una vista de detalle por vendor.
 
@@ -1147,6 +1304,7 @@ Tareas:
 ```
 
 ## Criterio de aceptación
+
 - cada vendor tiene ficha comparativa seria
 
 ---
@@ -1154,27 +1312,33 @@ Tareas:
 # Sprint 13 — Versionado de configuración por proyecto
 
 ## Objetivo
+
 Evitar el clásico desastre de alguien cambió preguntas o pesos y ya no sabemos por qué cambió el dashboard.
 
 ## Tablas implicadas
+
 - `project_version`
 - `audit_log`
 
 ## Backend implicado
+
 - `manager/projectversion/*`
 - `manager/audit/*`
 
 ## Frontend implicado
+
 - `views/versions/*`
 - `views/audit/*`
 
 ## Trabajo exacto
+
 - crear snapshot de configuración
 - activar versión
 - ver diff lógico
 - trazar cambios
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero implementar versionado de configuración por proyecto.
 
@@ -1191,6 +1355,7 @@ Tareas:
 ```
 
 ## Criterio de aceptación
+
 - cambios importantes trazables
 - menos suicidio operativo
 
@@ -1199,18 +1364,23 @@ Tareas:
 # Sprint 14 — Importación desde legados
 
 ## Objetivo
+
 Migrar datos históricos o plantillas antiguas al nuevo sistema.
 
 ## Tablas implicadas
+
 Prácticamente todas las de configuración y captura.
 
 ## Backend implicado
+
 - `io/project/Import/*`
 
 ## Frontend implicado
+
 - `views/settings/import/*`
 
 ## Trabajo exacto
+
 - importar CSV/XLSX exportado
 - mapear preguntas
 - mapear vendors
@@ -1218,6 +1388,7 @@ Prácticamente todas las de configuración y captura.
 - validar inconsistencias
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir un módulo de importación para poblar un proyecto desde archivos legados.
 
@@ -1233,6 +1404,7 @@ Tareas:
 ```
 
 ## Criterio de aceptación
+
 - se puede poblar un proyecto sin carga manual infinita
 
 ---
@@ -1240,25 +1412,31 @@ Tareas:
 # Sprint 15 — Exportación de resultados y snapshot del proyecto
 
 ## Objetivo
+
 Poder sacar evidencia, informes y congelar estados.
 
 ## Tablas implicadas
+
 - vistas agregadas
 - tablas del proyecto
 
 ## Backend implicado
+
 - `io/project/Export/*`
 
 ## Frontend implicado
+
 - `views/settings/export/*`
 
 ## Trabajo exacto
+
 - export resumen
 - export respuestas
 - export métricas
 - export snapshot JSON del proyecto
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero construir el módulo de exportación del proyecto.
 
@@ -1278,6 +1456,7 @@ Tareas:
 ```
 
 ## Criterio de aceptación
+
 - el proyecto puede salir del sistema con estructura clara
 
 ---
@@ -1285,25 +1464,31 @@ Tareas:
 # Sprint 16 — Multiidioma real de UI y textos de proyecto
 
 ## Objetivo
+
 Que la app soporte PT / ES / EN con seriedad.
 
 ## Tablas implicadas
+
 - `localized_text`
 
 ## Backend implicado
+
 - `manager/settings/*`
 
 ## Frontend implicado
+
 - `plugins/i18n.ts`
 - `locales/*`
 - pantallas de configuración
 
 ## Trabajo exacto
+
 - textos fijos UI por locale
 - textos configurables del proyecto
 - selector de idioma
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero añadir soporte multiidioma PT, ES y EN al proyecto.
 
@@ -1321,6 +1506,7 @@ Tareas:
 ```
 
 ## Criterio de aceptación
+
 - idioma intercambiable
 - sistema preparado para crecer
 
@@ -1329,22 +1515,27 @@ Tareas:
 # Sprint 17 — Validaciones, permisos funcionales y endurecimiento UX
 
 ## Objetivo
+
 Que el usuario no pueda romper la app ni meter basura alegremente.
 
 ## Tablas implicadas
+
 - base completa
 - audit log
 
 ## Backend implicado
+
 - services de validación
 - errores consistentes
 
 ## Frontend implicado
+
 - formularios
 - guards de navegación
 - confirmaciones
 
 ## Trabajo exacto
+
 - validaciones de negocio
 - mensajes claros
 - guardado seguro
@@ -1352,6 +1543,7 @@ Que el usuario no pueda romper la app ni meter basura alegremente.
 - bloqueo de acciones destructivas
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero endurecer la UX y las validaciones funcionales del evaluador.
 
@@ -1365,6 +1557,7 @@ Tareas:
 ```
 
 ## Criterio de aceptación
+
 - app más robusta
 - menos errores silenciosos
 
@@ -1373,22 +1566,27 @@ Tareas:
 # Sprint 18 — Tests, QA técnico y release 1.0
 
 ## Objetivo
+
 Cerrar una versión que no sea humo.
 
 ## Tablas implicadas
+
 Todas.
 
 ## Backend implicado
+
 - tests repository
 - tests services
 - tests endpoints
 
 ## Frontend implicado
+
 - tests stores
 - validación de tipos
 - lint
 
 ## Trabajo exacto
+
 - tests backend
 - test de migraciones
 - test de scoring
@@ -1398,6 +1596,7 @@ Todas.
 - build backend
 
 ## Prompt GitHub Copilot
+
 ```text
 Quiero preparar la release 1.0 de esta app Electron + Vue + Javalin + SQLite.
 
@@ -1410,6 +1609,7 @@ Tareas:
 ```
 
 ## Criterio de aceptación
+
 - build pasa
 - tests críticos pasan
 - release empaquetable
@@ -1445,6 +1645,7 @@ Tareas:
 La decisión de salir de Excel fue correcta. No era un problema de formato. Era un problema de modelo relacional y mantenibilidad.
 
 La apuesta buena aquí es:
+
 - SQLite como almacenamiento local serio
 - Javalin como cerebro funcional
 - Vue + PrimeVue como interfaz operativa
@@ -1453,4 +1654,3 @@ La apuesta buena aquí es:
 Eso os da algo muchísimo más sano que Excel: estructura, trazabilidad, versionado, métricas reales y crecimiento sin cirugía por columnas.
 
 Y además, una ventaja brutal: mañana podéis pasar de comparador de vendors a gestor de evaluación de soluciones sin rehacer el edificio.
-

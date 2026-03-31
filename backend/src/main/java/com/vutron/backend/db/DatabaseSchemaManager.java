@@ -1,95 +1,111 @@
 package com.vutron.backend.db;
 
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 public final class DatabaseSchemaManager {
-    private static final String SUPER_ADMIN_EMAIL = "topoplanet@topoplanet.net";
-    private static final String SUPER_ADMIN_PASSWORD_HASH = "c700be3353d72efd8348a35cb1c8eb70c112f634f8e75eb5dcdbf77f64b3b46f";
-
-    private static final String CREATE_PROJECTS_TABLE = """
-        CREATE TABLE IF NOT EXISTS projects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            code TEXT NOT NULL UNIQUE,
-            name TEXT NOT NULL,
-            description TEXT,
-            is_deleted INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-        """;
-
-    private static final String CREATE_USERS_TABLE = """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            project_id INTEGER,
-            email TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
-            is_super_admin INTEGER NOT NULL DEFAULT 0,
-            is_active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-            UNIQUE (project_id, email),
-            UNIQUE (email, is_super_admin)
-        );
-        """;
-
-    private static final String CREATE_APP_MESSAGES_TABLE = """
-        CREATE TABLE IF NOT EXISTS app_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            key TEXT NOT NULL UNIQUE,
-            value TEXT NOT NULL,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-        """;
-
-    private static final String CREATE_PROJECTS_ACTIVE_INDEX = """
-        CREATE INDEX IF NOT EXISTS idx_projects_active
-        ON projects(is_deleted);
-        """;
-
-    private static final String CREATE_USERS_PROJECT_INDEX = """
-        CREATE INDEX IF NOT EXISTS idx_users_project_id
-        ON users(project_id);
-        """;
-
-    private static final String CREATE_USERS_EMAIL_INDEX = """
-        CREATE INDEX IF NOT EXISTS idx_users_email
-        ON users(email);
-        """;
-
-    private static final String SEED_HELLO_WORLD = """
-        INSERT INTO app_messages (key, value)
-        VALUES ('HELLO_WORLD', 'Hola Mundo desde SQLite')
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value;
-        """;
+    private static final String V001_FILENAME = "V001__initial_schema.sql";
 
     private DatabaseSchemaManager() {
     }
 
-    public static void ensureSchema(DataSource dataSource) {
-        String seedSuperAdmin = """
-            INSERT INTO users (project_id, email, password_hash, is_super_admin, is_active)
-            VALUES (NULL, '%s', '%s', 1, 1)
-            ON CONFLICT(email, is_super_admin)
-            DO UPDATE SET password_hash = excluded.password_hash, is_active = 1;
-            """.formatted(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD_HASH);
+    public static void ensureSchema(DataSource dataSource, Path dbPath) {
+        applyV001Schema(dataSource, dbPath);
+    }
+
+    private static void applyV001Schema(DataSource dataSource, Path dbPath) {
+        Path scriptPath = resolveV001Path(dbPath);
+        String script;
+
+        try {
+            script = Files.readString(scriptPath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read schema script: " + scriptPath, e);
+        }
+
+        List<String> statements = splitSqlStatements(script);
 
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
-            statement.executeUpdate(CREATE_PROJECTS_TABLE);
-            statement.executeUpdate(CREATE_USERS_TABLE);
-            statement.executeUpdate(CREATE_APP_MESSAGES_TABLE);
-
-            statement.executeUpdate(CREATE_PROJECTS_ACTIVE_INDEX);
-            statement.executeUpdate(CREATE_USERS_PROJECT_INDEX);
-            statement.executeUpdate(CREATE_USERS_EMAIL_INDEX);
-
-            statement.executeUpdate(SEED_HELLO_WORLD);
-            statement.executeUpdate(seedSuperAdmin);
+            for (String sql : statements) {
+                statement.execute(sql);
+            }
         } catch (SQLException e) {
-            throw new IllegalStateException("Failed to ensure schema", e);
+            throw new IllegalStateException("Failed to apply schema script: " + scriptPath, e);
         }
+    }
+
+    private static Path resolveV001Path(Path dbPath) {
+        Path dbDir = dbPath.toAbsolutePath().normalize().getParent();
+        if (dbDir == null) {
+            throw new IllegalStateException("Could not resolve DB directory from path: " + dbPath);
+        }
+
+        Path scriptPath = dbDir.resolve("schema").resolve(V001_FILENAME).normalize();
+        if (!Files.exists(scriptPath)) {
+            throw new IllegalStateException("Schema script not found: " + scriptPath);
+        }
+        return scriptPath;
+    }
+
+    private static List<String> splitSqlStatements(String script) {
+        List<String> statements = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+
+        for (int i = 0; i < script.length(); i++) {
+            char c = script.charAt(i);
+            char next = i + 1 < script.length() ? script.charAt(i + 1) : '\0';
+
+            if (!inSingleQuote && !inDoubleQuote && c == '-' && next == '-') {
+                while (i < script.length() && script.charAt(i) != '\n') {
+                    i++;
+                }
+                continue;
+            }
+
+            if (!inSingleQuote && !inDoubleQuote && c == '/' && next == '*') {
+                i += 2;
+                while (i < script.length() - 1) {
+                    if (script.charAt(i) == '*' && script.charAt(i + 1) == '/') {
+                        i++;
+                        break;
+                    }
+                    i++;
+                }
+                continue;
+            }
+
+            if (c == '\'' && !inDoubleQuote) {
+                inSingleQuote = !inSingleQuote;
+            } else if (c == '"' && !inSingleQuote) {
+                inDoubleQuote = !inDoubleQuote;
+            }
+
+            if (c == ';' && !inSingleQuote && !inDoubleQuote) {
+                String sql = current.toString().trim();
+                if (!sql.isEmpty()) {
+                    statements.add(sql);
+                }
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+
+        String remaining = current.toString().trim();
+        if (!remaining.isEmpty()) {
+            statements.add(remaining);
+        }
+
+        return statements;
     }
 }

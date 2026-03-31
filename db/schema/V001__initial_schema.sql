@@ -1,3 +1,8 @@
+PRAGMA foreign_keys = ON;
+
+BEGIN TRANSACTION;
+
+-- Current minimal schema for the progressive build-out.
 CREATE TABLE IF NOT EXISTS project (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   code TEXT NOT NULL UNIQUE,
@@ -9,3 +14,5 @@ CREATE TABLE IF NOT EXISTS project (
 );
 
 CREATE INDEX IF NOT EXISTS idx_project_active ON project(is_deleted);
+
+COMMIT;

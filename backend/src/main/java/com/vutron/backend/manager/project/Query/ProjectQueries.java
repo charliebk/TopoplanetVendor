@@ -4,27 +4,29 @@ public final class ProjectQueries {
     private ProjectQueries() {
     }
 
+    public static final String TABLE_NAME = "project";
+
     public static final String LIST_ACTIVE = """
         SELECT id, code, name, description, is_deleted, created_at, updated_at
-        FROM projects
+        FROM project
         WHERE is_deleted = 0
         ORDER BY id DESC
         """;
 
     public static final String INSERT_PROJECT = """
-        INSERT INTO projects (code, name, description, is_deleted)
+        INSERT INTO project (code, name, description, is_deleted)
         VALUES (?, ?, ?, 0)
         """;
 
     public static final String SOFT_DELETE_PROJECT = """
-        UPDATE projects
+        UPDATE project
         SET is_deleted = 1,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """;
 
     public static final String UPDATE_BY_ID = """
-        UPDATE projects
+        UPDATE project
         SET code = ?,
             name = ?,
             description = ?,
@@ -35,20 +37,20 @@ public final class ProjectQueries {
 
     public static final String FIND_BY_ID = """
         SELECT id, code, name, description, is_deleted, created_at, updated_at
-        FROM projects
+        FROM project
         WHERE id = ?
         LIMIT 1
         """;
 
     public static final String FIND_BY_CODE = """
         SELECT id, code, name, description, is_deleted, created_at, updated_at
-        FROM projects
+        FROM project
         WHERE code = ?
         LIMIT 1
         """;
 
     public static final String UPSERT_BY_CODE = """
-        INSERT INTO projects (code, name, description, is_deleted)
+        INSERT INTO project (code, name, description, is_deleted)
         VALUES (?, ?, ?, 0)
         ON CONFLICT(code)
         DO UPDATE SET
