@@ -213,6 +213,8 @@ Resultado aplicado en el modulo:
 
 Objetivo: cubrir el caso de filtros de listas remotas o cargadas por store.
 
+Estado actual: completado.
+
 Entregables:
 
 - `optionItemsProvider` equivalente en V1.
@@ -223,6 +225,13 @@ Entregables:
 Criterio de cierre:
 
 - Las columnas tipo lista funcionan sin que la pantalla tenga que preprocesar todas las opciones manualmente.
+
+Resultado aplicado en el modulo:
+
+- `GenericDataTableColumn` soporta `optionItemsProvider`, `optionLabelField`, `optionValueField`, `optionTransform`, `includeAllOption`, `includeAllLabel` y `optionReloadStrategy`.
+- V1 incorpora `useGenericDataTableOptions` para resolver opciones dinamicas desde items crudos o providers asincronos.
+- `GenericDataTable.vue` resuelve dropdowns `list/select` con opciones dinamicas y expone `reloadFilterOptions()` via `ref`.
+- `ProjectMain.vue` valida el flujo con una columna lista alimentada desde items crudos y otra que recarga opciones cuando cambia la query.
 
 ## Sprint 10. Endurecimiento para reutilizacion real
 

@@ -41,6 +41,7 @@ import {
   GenericDataTableCountBar,
   prepareDataTablePrint,
   toBatchRequest,
+  useGenericDataTableOptions,
   useGenericDataTableSelection,
   useGenericDataTableQuery,
   type GenericDataTableColumn,
@@ -117,8 +118,20 @@ Compatibilidad asumida por implementacion actual:
 
 - `showRefreshButton`, `refreshLabel`: boton integrado de recarga.
 - `showCountBar`, `countBarPosition`, `countBarShowShown`: contador desacoplado arriba, abajo o en ambos extremos.
+- `showOptionErrorsState`: permite apagar el fallback visual por defecto del resumen agregado de errores de opciones. Si la pantalla declara `#option-errors`, el slot sigue renderizando aunque esta prop sea `false`.
 - `emptyMessage`, `loadingMessage`, `errorMessage`: mensajes parametrizables para estados comunes.
 - `showClearFiltersButton`, `clearFiltersLabel`: limpieza integrada de filtros.
+
+### Opciones dinamicas para listas
+
+- `optionItemsProvider`: permite devolver items crudos desde store o desde una llamada asincrona sin premapear `filterOptions`.
+- `optionLabelField` y `optionValueField`: controlan el mapeo por defecto desde item crudo a `{ label, value }`.
+- `optionTransform`: permite mapear manualmente cada item crudo cuando el shape o la etiqueta final requiere logica adicional.
+- `includeAllOption` e `includeAllLabel`: insertan una opcion global con `value: null` al inicio del dropdown.
+- `optionReloadStrategy`: `mount`, `query-change` o `manual`.
+- `useGenericDataTableOptions` es el composable publico equivalente si el consumidor quiere resolver esas opciones fuera del componente.
+- La API expuesta via `ref` incorpora `reloadFilterOptions()` para recargar una o varias columnas cuando las opciones dependen de otro store o de un cambio externo.
+- Si un `optionItemsProvider` falla, la tabla deja la lista vacia para esa columna, muestra un mensaje inline bajo el filtro y expone un boton `Retry` para reintentar la carga desde la propia UI.
 
 ### Interaccion de filas y acciones
 
@@ -149,8 +162,10 @@ Compatibilidad asumida por implementacion actual:
 
 - `toolbar-main`: contenido adicional junto al filtro global y resumen de seleccion.
 - `toolbar-actions`: acciones globales del consumidor en la barra superior.
+- `option-errors`: bloque de estado especifico para resumir fallos agregados de `optionItemsProvider` fuera del toolbar.
 - `count-bar`: contenido adicional dentro del contador desacoplado.
 - `empty`, `loading`, `error`: sobreescritura visual de estados sin reemplazar el componente completo.
+- Los slots de toolbar, `option-errors` y count bar reciben tambien `optionErrors`, `hasOptionErrors` y `reloadFilterOptions()` para que la pantalla pueda renderizar o reintentar un resumen global cuando fallen varios `optionItemsProvider`.
 
 ### API de seleccion
 
@@ -670,7 +685,7 @@ Resolucion actual por defecto:
 - `percent` renderiza numerico con sufijo `%` y filtra como numerico.
 - `date` renderiza fecha local y usa `Calendar`.
 - `boolean` renderiza `Tag` y usa `Dropdown` booleano.
-- `select` y `list` usan `Dropdown` con `filterOptions`.
+- `select` y `list` usan `Dropdown` con `filterOptions` estatico o con opciones resueltas desde `optionItemsProvider`.
 - `idIcon` renderiza icono y texto opcional usando `idIconClass`, `displayField` y `tooltipField`.
 - `actions` renderiza botones de accion y no tiene filtro por defecto.
 
@@ -684,10 +699,11 @@ Ejemplo de columna con metadatos nuevos:
   filterable: true,
   displayField: 'categoryName',
   backendField: 'categoryId',
-  filterOptions: [
-    { label: 'Safety', value: 1 },
-    { label: 'Quality', value: 2 }
-  ]
+  optionItemsProvider: () => categoryStore.items,
+  optionLabelField: 'name',
+  optionValueField: 'id',
+  includeAllOption: true,
+  includeAllLabel: 'All categories'
 }
 ```
 
@@ -696,9 +712,17 @@ Ejemplo de columna con metadatos nuevos:
   field: 'originId',
   header: 'Origin',
   type: 'idIcon',
+  filterType: 'list',
+  backendField: 'originId',
   displayField: 'originName',
   tooltipField: 'originDescription',
-  idIconClass: (row) => row.originActive ? 'pi pi-check-circle' : 'pi pi-ban'
+  idIconClass: (row) => row.originActive ? 'pi pi-check-circle' : 'pi pi-ban',
+  optionItemsProvider: ({ query }) => originStore.findByCategory(query.filters?.categoryId ?? null),
+  optionTransform: (raw) => ({
+    label: `${raw.name} (${raw.source})`,
+    value: raw.id
+  }),
+  optionReloadStrategy: 'query-change'
 }
 ```
 
@@ -710,8 +734,11 @@ Sprint 3 fija este contrato para filtros:
 - Si una columna define `backendField`, la query emitida usa esa clave para filtros y orden.
 - Si una columna define `paramTransform`, la tabla aplica esa transformacion antes de emitir la query.
 - Si una columna `date` no define `paramTransform`, la tabla normaliza `Date` a `YYYY-MM-DD`.
-- Las columnas `list` y `select` emiten directamente el `value` de `filterOptions`.
+- Las columnas `list` y `select` emiten directamente el `value` resuelto, venga de `filterOptions` o de `optionItemsProvider`.
 - `clearFilters` reinicia filtro global y filtros por columna, emitiendo una query limpia y consistente.
+- Si `optionReloadStrategy === 'query-change'`, la tabla recarga automaticamente las opciones dinamicas cuando cambia la query.
+- Si las opciones dependen de otro store o de una condicion externa que no vive en la query, la estrategia recomendada es `manual` + `tableRef.value?.reloadFilterOptions([...])`.
+- Cuando un provider remoto falle, la UI del filtro muestra el mensaje de error devuelto por la excepcion si existe; si no, cae a `Filter options could not be loaded.`.
 
 Ejemplo de filtros backend-friendly:
 

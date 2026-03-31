@@ -14,11 +14,11 @@
               {{ currentProjectDescription }}
             </p>
             <div class="project-main__demo-intro">
-              <span class="project-main__demo-badge">Sprint 8 Demo</span>
+              <span class="project-main__demo-badge">Sprint 9 Demo</span>
               <p class="app-copy app-copy--muted">
-                Tabla temporal para validar exportacion CSV, preparacion de
-                impresion y exclusion automatica de columnas de acciones en la
-                V1.
+                Tabla temporal para validar opciones dinamicas en filtros tipo
+                lista, mapeo desde items crudos, recarga dependiente de query y
+                error visual explicito cuando falla un provider remoto en la V1.
               </p>
             </div>
           </div>
@@ -27,19 +27,20 @@
 
       <PrimeCard class="app-panel project-main__panel">
         <template #title>
-          <span>CustomDataTableV1 Export Demo</span>
+          <span>CustomDataTableV1 Dynamic Options Demo</span>
         </template>
         <template #subtitle>
-          Provider mode with batch selection, CSV export and print preparation
+          Provider mode with dynamic list filters, batch selection and export
         </template>
         <template #content>
           <div class="app-stack app-stack--compact">
             <GenericDataTable
               ref="demoTable"
-              :columns="demoColumns"
+              :columns="demoColumnsForTable"
               :rows="[]"
               :query="demoQuery"
-              :data-provider="demoDataProvider"
+              :data-provider="demoDataProviderForTable"
+              :show-option-errors-state="false"
               selection-mode="multiple"
               empty-message="No demo audits match the current filters"
               loading-message="Reloading demo audits..."
@@ -50,14 +51,14 @@
               show-count-bar
               count-bar-position="both"
               count-bar-show-shown
-              :row-disabled="isDemoRowDisabled"
+              :row-disabled="isDemoRowDisabledForTable"
               disabled-row-selection-scope="filtered"
               :disabled-filtered-row-keys="demoDisabledFilteredRowKeys"
               disabled-filtered-rows-resolved
               @update:query="onDemoQueryChange"
-              @row-click="onDemoRowClick"
-              @action="onDemoAction"
-              @selection-change="onDemoSelectionChange"
+              @row-click="onDemoRowClickForTable"
+              @action="onDemoActionForTable"
+              @selection-change="onDemoSelectionChangeForTable"
               @refresh="onDemoRefresh"
             >
               <template #toolbar-main="slotProps">
@@ -66,13 +67,39 @@
                     {{ slotProps.filteredTotal }} filtered audits
                   </span>
                   <span class="project-main__toolbar-note">
-                    Legacy Import rows are resolved across the full filtered
-                    result before select-all-filtered is allowed
+                    Origin filter options reload automatically when the category
+                    filter changes; category options come from raw store-like
+                    items and can fail explicitly to validate the dedicated slot
+                    plus the inline error UI.
                   </span>
                 </div>
               </template>
 
               <template #toolbar-actions>
+                <PrimeButton
+                  type="button"
+                  :icon="
+                    demoFailOriginOptions
+                      ? 'pi pi-check'
+                      : 'pi pi-exclamation-triangle'
+                  "
+                  text
+                  :severity="demoFailOriginOptions ? 'success' : 'danger'"
+                  :label="
+                    demoFailOriginOptions
+                      ? 'Restore origin provider'
+                      : 'Simulate origin provider failure'
+                  "
+                  @click="void onToggleOriginOptionFailure()"
+                />
+                <PrimeButton
+                  type="button"
+                  icon="pi pi-sync"
+                  text
+                  severity="secondary"
+                  label="Reload filter options"
+                  @click="void onReloadDemoFilterOptions()"
+                />
                 <PrimeButton
                   type="button"
                   icon="pi pi-inbox"
@@ -81,6 +108,33 @@
                   label="Snapshot selection"
                   @click="onRefreshSelectionApi"
                 />
+              </template>
+
+              <template #option-errors="slotProps">
+                <div
+                  v-if="slotProps.hasOptionErrors"
+                  class="project-main__option-errors-panel"
+                >
+                  <div class="project-main__option-errors-copy">
+                    <strong>
+                      {{ slotProps.optionErrors.length }} dynamic filter
+                      source{{ slotProps.optionErrors.length === 1 ? '' : 's' }}
+                      failed
+                    </strong>
+                    <span>
+                      {{ formatOptionErrorSummary(slotProps.optionErrors) }}
+                    </span>
+                  </div>
+                  <PrimeButton
+                    type="button"
+                    icon="pi pi-refresh"
+                    text
+                    size="small"
+                    severity="danger"
+                    label="Retry failed filters"
+                    @click="void slotProps.reloadFilterOptions()"
+                  />
+                </div>
               </template>
 
               <template #count-bar="slotProps">
@@ -106,6 +160,22 @@
               </div>
               <pre class="project-main__query-code">{{
                 demoInteractionLog
+              }}</pre>
+            </div>
+
+            <div class="project-main__query-panel">
+              <div class="project-main__query-header">
+                <span class="project-main__query-title">
+                  Dynamic option provider state
+                </span>
+                <span class="project-main__query-caption">
+                  Toggle the origin provider failure and open the Origin filter
+                  to inspect the dedicated `option-errors` slot plus the inline
+                  retry/error UI.
+                </span>
+              </div>
+              <pre class="project-main__query-code">{{
+                demoOptionProviderStatus
               }}</pre>
             </div>
 
@@ -203,6 +273,7 @@ import {
   GenericDataTable,
   prepareDataTablePrint,
   toBatchRequest,
+  type GenericDataTableActionPayload,
   type GenericDataTableActionHandler,
   type GenericDataTableColumn,
   type GenericDataTableDataProvider,
@@ -210,6 +281,7 @@ import {
   type GenericDataTableQuery,
   type GenericDataTableQueryChangeHandler,
   type GenericDataTableRefreshHandler,
+  type GenericDataTableRow,
   type GenericDataTableRowClickHandler,
   type GenericDataTableSelectionChangeHandler,
   type GenericDataTableSelectionPayload
@@ -248,11 +320,19 @@ const demoSelection =
   ref<GenericDataTableSelectionPayload<DemoAuditRow> | null>(null)
 const demoRefreshCount = ref(0)
 const demoInteractionLog = ref('No interaction registered yet.')
+const demoFailOriginOptions = ref(false)
 
-const categoryOptions = [
-  { label: 'Safety', value: 1 },
-  { label: 'Quality', value: 2 },
-  { label: 'Compliance', value: 3 }
+const demoCategoryCatalog = [
+  { id: 1, name: 'Safety' },
+  { id: 2, name: 'Quality' },
+  { id: 3, name: 'Compliance' }
+]
+
+const demoOriginCatalog = [
+  { id: 1, name: 'Sensor Hub', categoryIds: [1, 3], source: 'live' },
+  { id: 2, name: 'Legacy Import', categoryIds: [2, 3], source: 'legacy' },
+  { id: 3, name: 'Mobile Capture', categoryIds: [1, 2], source: 'mobile' },
+  { id: 4, name: 'Partner Feed', categoryIds: [1, 2], source: 'partner' }
 ]
 
 const demoDataset: DemoAuditRow[] = [
@@ -388,13 +468,45 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
     type: 'idIcon',
     sortable: true,
     filterable: true,
-    filterType: 'text',
+    filterType: 'list',
     displayField: 'originName',
     exportHeader: 'Origin',
-    backendField: 'originName',
+    backendField: 'originId',
     tooltipField: 'originDescription',
     idIconClass: (row) =>
       row.originActive ? 'pi pi-check-circle' : 'pi pi-ban',
+    optionItemsProvider: ({ query }) => {
+      if (demoFailOriginOptions.value) {
+        throw new Error(
+          'Origin filter options could not be loaded from the remote provider.'
+        )
+      }
+
+      const selectedCategoryId = query.filters?.categoryId
+
+      if (typeof selectedCategoryId !== 'number') {
+        return demoOriginCatalog
+      }
+
+      return demoOriginCatalog.filter((origin) =>
+        origin.categoryIds.includes(selectedCategoryId)
+      )
+    },
+    optionTransform: (raw) => {
+      const origin = raw as {
+        id: number
+        name: string
+        source: string
+      }
+
+      return {
+        label: `${origin.name} (${origin.source})`,
+        value: origin.id
+      }
+    },
+    includeAllOption: true,
+    includeAllLabel: 'All origins',
+    optionReloadStrategy: 'query-change',
     minWidth: '13rem'
   },
   {
@@ -405,7 +517,11 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
     filterable: true,
     displayField: 'categoryName',
     backendField: 'categoryId',
-    filterOptions: categoryOptions,
+    optionItemsProvider: () => demoCategoryCatalog,
+    optionLabelField: 'name',
+    optionValueField: 'id',
+    includeAllOption: true,
+    includeAllLabel: 'All categories',
     minWidth: '11rem'
   },
   {
@@ -510,6 +626,10 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
   }
 ]
 
+const demoColumnsForTable = demoColumns as unknown as Array<
+  GenericDataTableColumn<GenericDataTableRow>
+>
+
 const currentProjectName = computed(() => {
   return currentProject.value?.name ?? t('ProjectMain.fallbackTitle')
 })
@@ -527,6 +647,29 @@ const currentProjectDescription = computed(() => {
 const demoQueryPreview = computed(() =>
   JSON.stringify(demoQuery.value, null, 2)
 )
+
+const demoOptionProviderStatus = computed(() => {
+  return JSON.stringify(
+    {
+      originProviderFailureEnabled: demoFailOriginOptions.value,
+      recommendedCheck:
+        'Open the Origin filter dropdown to see the inline error and retry action when the remote provider fails.'
+    },
+    null,
+    2
+  )
+})
+
+const formatOptionErrorSummary = (
+  errors: Array<{ header: string; message: string } | null>
+): string => {
+  return errors
+    .filter(
+      (error): error is { header: string; message: string } => error !== null
+    )
+    .map((error) => `${error.header}: ${error.message}`)
+    .join(' | ')
+}
 
 const demoFilteredRows = computed(() => applyDemoQuery(demoQuery.value))
 
@@ -698,6 +841,9 @@ const demoDataProvider: GenericDataTableDataProvider<DemoAuditRow> = async ({
   }
 }
 
+const demoDataProviderForTable =
+  demoDataProvider as unknown as GenericDataTableDataProvider<GenericDataTableRow>
+
 const onDemoQueryChange: GenericDataTableQueryChangeHandler = (nextQuery) => {
   demoQuery.value = nextQuery
 }
@@ -706,8 +852,25 @@ const onDemoRowClick: GenericDataTableRowClickHandler<DemoAuditRow> = (row) => {
   demoInteractionLog.value = `row-click -> ${row.auditCode}`
 }
 
+const isDemoRowDisabledForTable = (row: GenericDataTableRow): boolean => {
+  return isDemoRowDisabled(row as DemoAuditRow)
+}
+
+const onDemoRowClickForTable = (row: GenericDataTableRow): void => {
+  onDemoRowClick(row as DemoAuditRow)
+}
+
 const onDemoAction: GenericDataTableActionHandler<DemoAuditRow> = (payload) => {
   demoInteractionLog.value = `${payload.actionKey} -> ${payload.row.auditCode}`
+}
+
+const onDemoActionForTable = (
+  payload: GenericDataTableActionPayload<GenericDataTableRow>
+): void => {
+  onDemoAction({
+    actionKey: payload.actionKey,
+    row: payload.row as DemoAuditRow
+  })
 }
 
 const onDemoSelectionChange: GenericDataTableSelectionChangeHandler<
@@ -716,9 +879,30 @@ const onDemoSelectionChange: GenericDataTableSelectionChangeHandler<
   demoSelection.value = payload
 }
 
+const onDemoSelectionChangeForTable = (
+  payload: GenericDataTableSelectionPayload<GenericDataTableRow>
+): void => {
+  onDemoSelectionChange(
+    payload as GenericDataTableSelectionPayload<DemoAuditRow>
+  )
+}
+
 const onRefreshSelectionApi = (): void => {
   demoTable.value?.refreshVisibleRows()
   demoSelection.value = demoTable.value?.getSelectionPayload() ?? null
+}
+
+const onReloadDemoFilterOptions = async (): Promise<void> => {
+  await demoTable.value?.reloadFilterOptions(['categoryId', 'originId'])
+  demoInteractionLog.value = 'reload-filter-options -> categoryId, originId'
+}
+
+const onToggleOriginOptionFailure = async (): Promise<void> => {
+  demoFailOriginOptions.value = !demoFailOriginOptions.value
+  await demoTable.value?.reloadFilterOptions(['originId'])
+  demoInteractionLog.value = demoFailOriginOptions.value
+    ? 'origin-option-provider -> forced failure'
+    : 'origin-option-provider -> restored'
 }
 
 const onDemoRefresh: GenericDataTableRefreshHandler = () => {
@@ -808,6 +992,25 @@ onMounted((): void => {
 .project-main__toolbar-note {
   color: var(--app-text-muted);
   font-size: 0.82rem;
+}
+
+.project-main__option-errors-panel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+  padding: var(--app-space-3) var(--app-space-4);
+  border-radius: var(--app-radius-panel);
+  border: 1px solid rgba(182, 58, 58, 0.28);
+  background: rgba(182, 58, 58, 0.08);
+}
+
+.project-main__option-errors-copy {
+  display: grid;
+  gap: 0.2rem;
+  color: #8f2f2f;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 .project-main__action-button--inspect {

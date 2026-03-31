@@ -13,9 +13,12 @@
           :baseline-total="resolvedBaselineTotal"
           :has-filters="hasActiveFilters"
           :selection="selectionPayload"
+          :option-errors="optionErrorSummary"
+          :has-option-errors="hasOptionErrors"
           :clear-filters="onClearFilters"
           :clear-selection="onClearSelection"
           :refresh="onRefresh"
+          :reload-filter-options="onReloadAllFilterOptions"
         ></slot>
 
         <PrimeInputText
@@ -98,11 +101,63 @@
           :baseline-total="resolvedBaselineTotal"
           :has-filters="hasActiveFilters"
           :selection="selectionPayload"
+          :option-errors="optionErrorSummary"
+          :has-option-errors="hasOptionErrors"
           :clear-filters="onClearFilters"
           :clear-selection="onClearSelection"
           :refresh="onRefresh"
+          :reload-filter-options="onReloadAllFilterOptions"
         ></slot>
       </div>
+    </div>
+
+    <div
+      v-if="shouldRenderOptionErrorsState"
+      class="generic-data-table__option-errors-state"
+    >
+      <slot
+        name="option-errors"
+        :query="currentQuery"
+        :rows="resolvedRows"
+        :filtered-total="resolvedTotalRecords"
+        :baseline-total="resolvedBaselineTotal"
+        :has-filters="hasActiveFilters"
+        :selection="selectionPayload"
+        :option-errors="optionErrorSummary"
+        :has-option-errors="hasOptionErrors"
+        :clear-filters="onClearFilters"
+        :clear-selection="onClearSelection"
+        :refresh="onRefresh"
+        :reload-filter-options="onReloadAllFilterOptions"
+      >
+        <div
+          v-if="hasOptionErrors"
+          class="generic-data-table__option-errors-summary"
+          role="status"
+          aria-live="polite"
+        >
+          <div class="generic-data-table__option-errors-copy">
+            <strong>
+              {{ optionErrorSummary.length }} filter option source{{
+                optionErrorSummary.length === 1 ? '' : 's'
+              }}
+              failed
+            </strong>
+            <span>
+              {{ optionErrorSummaryText }}
+            </span>
+          </div>
+          <PrimeButton
+            type="button"
+            icon="pi pi-refresh"
+            text
+            size="small"
+            severity="danger"
+            label="Retry all"
+            @click="void onReloadAllFilterOptions()"
+          />
+        </div>
+      </slot>
     </div>
 
     <GenericDataTableCountBar
@@ -125,9 +180,12 @@
         :shown="resolvedRows.length"
         :has-filters="hasActiveFilters"
         :selection="selectionPayload"
+        :option-errors="optionErrorSummary"
+        :has-option-errors="hasOptionErrors"
         :clear-filters="onClearFilters"
         :clear-selection="onClearSelection"
         :refresh="onRefresh"
+        :reload-filter-options="onReloadAllFilterOptions"
       ></slot>
     </GenericDataTableCountBar>
 
@@ -320,9 +378,10 @@
                   resolveFilterType(column) === 'list'
                 "
                 :model-value="primeFilters[column.field]?.value ?? null"
-                :options="column.filterOptions ?? []"
+                :options="resolveColumnFilterOptions(column)"
                 option-label="label"
                 option-value="value"
+                :loading="isColumnOptionsLoading(column.field)"
                 show-clear
                 :placeholder="column.header"
                 class="generic-data-table__filter-input"
@@ -330,6 +389,25 @@
                   (value) => onColumnFilterChange(column.field, value)
                 "
               />
+              <div
+                v-if="resolveColumnOptionsError(column)"
+                class="generic-data-table__filter-error"
+                role="status"
+                aria-live="polite"
+              >
+                <span>
+                  {{ resolveColumnOptionsError(column)?.message }}
+                </span>
+                <PrimeButton
+                  type="button"
+                  icon="pi pi-refresh"
+                  text
+                  size="small"
+                  severity="danger"
+                  label="Retry"
+                  @click="void onReloadColumnOptions(column.field)"
+                />
+              </div>
               <!-- eslint-enable vue/html-indent -->
 
               <PrimeDropdown
@@ -443,9 +521,12 @@
         :shown="resolvedRows.length"
         :has-filters="hasActiveFilters"
         :selection="selectionPayload"
+        :option-errors="optionErrorSummary"
+        :has-option-errors="hasOptionErrors"
         :clear-filters="onClearFilters"
         :clear-selection="onClearSelection"
         :refresh="onRefresh"
+        :reload-filter-options="onReloadAllFilterOptions"
       ></slot>
     </GenericDataTableCountBar>
   </div>
@@ -485,6 +566,7 @@ import type {
   GenericDataTableRow,
   GenericDataTableSelectionPayload
 } from './generic-data-table.types'
+import { useGenericDataTableOptions } from './useGenericDataTableOptions'
 import { useGenericDataTableProvider } from './useGenericDataTableProvider'
 import { useGenericDataTableQuery } from './useGenericDataTableQuery'
 import { useGenericDataTableSelection } from './useGenericDataTableSelection'
@@ -524,6 +606,7 @@ const props = withDefaults(
     showRefreshButton: false,
     showSelectionToolbar: true,
     showCountBar: false,
+    showOptionErrorsState: true,
     countBarPosition: 'top',
     countBarShowShown: false,
     disabledRowSelectionScope: 'visible',
@@ -579,6 +662,11 @@ const providerState = useGenericDataTableProvider({
   enabled: isProviderMode,
   onLoad: (payload) => emit('load', payload),
   onError: (payload) => emit('provider-error', payload)
+})
+
+const optionState = useGenericDataTableOptions({
+  columns: computed(() => props.columns),
+  query: currentQuery
 })
 
 const booleanFilterOptions = [
@@ -787,6 +875,8 @@ const hasToolbarMainSlot = computed(() => Boolean(slots['toolbar-main']))
 
 const hasToolbarActionsSlot = computed(() => Boolean(slots['toolbar-actions']))
 
+const hasOptionErrorsSlot = computed(() => Boolean(slots['option-errors']))
+
 const hasCountBarSlot = computed(() => Boolean(slots['count-bar']))
 
 const showToolbar = computed(
@@ -806,6 +896,12 @@ const showSelectionToolbar = computed(
 const showRefreshButton = computed(() => props.showRefreshButton)
 
 const showCountBar = computed(() => props.showCountBar || hasCountBarSlot.value)
+
+const shouldRenderOptionErrorsState = computed(
+  () =>
+    hasOptionErrorsSlot.value ||
+    (props.showOptionErrorsState && hasOptionErrors.value)
+)
 
 const showCountBarTop = computed(() => {
   return (
@@ -912,6 +1008,48 @@ const resolveFilterType = (
     | 'list'
     | 'select'
 }
+
+const resolveColumnFilterOptions = (
+  column: GenericDataTableColumn<GenericDataTableRow>
+) => {
+  return optionState.resolvedOptions.value[column.field] ?? []
+}
+
+const isColumnOptionsLoading = (field: string): boolean => {
+  return optionState.loadingByField.value[field] === true
+}
+
+const resolveColumnOptionsError = (
+  column: GenericDataTableColumn<GenericDataTableRow>
+) => {
+  return optionState.errorByField.value[column.field] ?? null
+}
+
+const optionErrorSummary = computed(() => {
+  return props.columns
+    .map((column) => {
+      const error = resolveColumnOptionsError(column)
+
+      if (!error) {
+        return null
+      }
+
+      return {
+        field: column.field,
+        header: column.header,
+        message: error.message
+      }
+    })
+    .filter(Boolean)
+})
+
+const hasOptionErrors = computed(() => optionErrorSummary.value.length > 0)
+
+const optionErrorSummaryText = computed(() => {
+  return optionErrorSummary.value
+    .map((error) => `${error.header}: ${error.message}`)
+    .join(' | ')
+})
 
 const isNumericFilterType = (
   column: GenericDataTableColumn<GenericDataTableRow>
@@ -1253,6 +1391,16 @@ const onClearSelection = (): void => {
   selectionState.clearSelection()
 }
 
+const onReloadColumnOptions = async (field: string): Promise<void> => {
+  await optionState.reloadFilterOptions([field])
+}
+
+const onReloadAllFilterOptions = async (
+  fields?: Array<keyof GenericDataTableRow & string>
+): Promise<void> => {
+  await optionState.reloadFilterOptions(fields)
+}
+
 const onRowClick = (event: DataTableRowClickEvent): void => {
   if (isRowDisabled(event.data as GenericDataTableRow)) {
     return
@@ -1308,7 +1456,8 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
   refresh: () => onRefresh(),
   clearFilters: () => onClearFilters(),
   exportCsv,
-  preparePrint
+  preparePrint,
+  reloadFilterOptions: (fields) => optionState.reloadFilterOptions(fields)
 })
 </script>
 
@@ -1350,12 +1499,46 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
   font-size: 0.9rem;
 }
 
+.generic-data-table__option-errors-state {
+  margin: 0;
+}
+
+.generic-data-table__option-errors-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(182, 58, 58, 0.28);
+  background: rgba(182, 58, 58, 0.08);
+}
+
+.generic-data-table__option-errors-copy {
+  display: grid;
+  gap: 0.2rem;
+  color: #8f2f2f;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
 .generic-data-table__count-bar {
   margin: 0;
 }
 
 .generic-data-table__filter-cell {
   min-width: 9rem;
+}
+
+.generic-data-table__filter-error {
+  margin-top: 0.35rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #b63a3a;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .generic-data-table__selection-cell {

@@ -40,6 +40,41 @@ export interface GenericDataTableOption {
   value: string | number | boolean | null
 }
 
+export interface GenericDataTableOptionLoadError {
+  message: string
+  cause?: unknown
+}
+
+export interface GenericDataTableOptionErrorSummary {
+  field: string
+  header: string
+  message: string
+}
+
+export type GenericDataTableOptionReloadStrategy =
+  | 'mount'
+  | 'query-change'
+  | 'manual'
+
+export interface GenericDataTableOptionProviderContext<
+  Row extends GenericDataTableRow
+> {
+  query: GenericDataTableQuery
+  column: GenericDataTableColumn<Row>
+}
+
+export type GenericDataTableOptionItemsProvider<
+  Row extends GenericDataTableRow
+> = (
+  context: GenericDataTableOptionProviderContext<Row>
+) => unknown[] | Promise<unknown[]>
+
+export type GenericDataTableOptionTransform<Row extends GenericDataTableRow> = (
+  raw: unknown,
+  column: GenericDataTableColumn<Row>,
+  context: GenericDataTableOptionProviderContext<Row>
+) => GenericDataTableOption
+
 export interface GenericDataTableProviderRequest<
   Row extends GenericDataTableRow
 > {
@@ -217,6 +252,7 @@ export type GenericDataTableExpose<Row extends GenericDataTableRow> = Pick<
     rows?: Row[],
     options?: GenericDataTablePrintOptions
   ) => GenericDataTablePreparedPrintPayload<Row>
+  reloadFilterOptions: (fields?: Array<keyof Row & string>) => Promise<void>
 }
 
 export interface GenericDataTableToolbarSlotPayload<
@@ -228,9 +264,12 @@ export interface GenericDataTableToolbarSlotPayload<
   baselineTotal: number | null
   hasFilters: boolean
   selection: GenericDataTableSelectionPayload<Row> | null
+  optionErrors: GenericDataTableOptionErrorSummary[]
+  hasOptionErrors: boolean
   clearFilters: () => void
   clearSelection: () => void
   refresh: () => Promise<void>
+  reloadFilterOptions: (fields?: Array<keyof Row & string>) => Promise<void>
 }
 
 export interface GenericDataTableCountBarSlotPayload<
@@ -238,6 +277,10 @@ export interface GenericDataTableCountBarSlotPayload<
 > extends GenericDataTableToolbarSlotPayload<Row> {
   shown: number
 }
+
+export type GenericDataTableOptionErrorsSlotPayload<
+  Row extends GenericDataTableRow
+> = GenericDataTableToolbarSlotPayload<Row>
 
 export interface GenericDataTableSelectionOptions<
   Row extends GenericDataTableRow
@@ -299,6 +342,13 @@ export interface GenericDataTableColumn<Row extends GenericDataTableRow> {
   filterType?: GenericDataTableFilterType
   matchMode?: GenericDataTableMatchMode
   filterOptions?: GenericDataTableOption[]
+  optionLabelField?: string
+  optionValueField?: string
+  includeAllOption?: boolean
+  includeAllLabel?: string
+  optionTransform?: GenericDataTableOptionTransform<Row>
+  optionItemsProvider?: GenericDataTableOptionItemsProvider<Row>
+  optionReloadStrategy?: GenericDataTableOptionReloadStrategy
   width?: string
   minWidth?: string
   maxWidth?: string
@@ -357,6 +407,7 @@ export interface GenericDataTableProps<Row extends GenericDataTableRow> {
   showRefreshButton?: boolean
   showSelectionToolbar?: boolean
   showCountBar?: boolean
+  showOptionErrorsState?: boolean
   countBarPosition?: 'top' | 'bottom' | 'both'
   countBarShowShown?: boolean
   rowDisabled?: boolean | ((row: Row) => boolean)
