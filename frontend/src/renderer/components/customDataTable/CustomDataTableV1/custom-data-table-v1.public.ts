@@ -1,5 +1,6 @@
 export { default as GenericDataTable } from './GenericDataTable.vue'
 export { default as GenericDataTableCountBar } from './GenericDataTableCountBar.vue'
+export { exportDataTableCsv, prepareDataTablePrint } from './tableExport'
 export { toBatchRequest } from './toBatchRequest'
 export { useGenericDataTableQuery } from './useGenericDataTableQuery'
 export { useGenericDataTableSelection } from './useGenericDataTableSelection'
@@ -12,9 +13,11 @@ export type {
   GenericDataTableColumnType,
   GenericDataTableCountBarProps,
   GenericDataTableCountBarSlotPayload,
+  GenericDataTableCsvExportOptions,
   GenericDataTableDataProvider,
   GenericDataTableEmits,
   GenericDataTableEventName,
+  GenericDataTableExportSource,
   GenericDataTableFilterType,
   GenericDataTableFilterValue,
   GenericDataTableLoadResult,
@@ -24,6 +27,9 @@ export type {
   GenericDataTableOption,
   GenericDataTablePrimeFilter,
   GenericDataTablePrimeFilters,
+  GenericDataTablePreparedExportColumn,
+  GenericDataTablePreparedPrintPayload,
+  GenericDataTablePreparedPrintRow,
   GenericDataTableProps,
   GenericDataTableProviderErrorHandler,
   GenericDataTableProviderErrorPayload,
@@ -34,6 +40,7 @@ export type {
   GenericDataTableRefreshPayload,
   GenericDataTableProviderState,
   GenericDataTableProviderSuccess,
+  GenericDataTablePrintOptions,
   GenericDataTableQuery,
   GenericDataTableQueryChangeHandler,
   GenericDataTableQueryController,

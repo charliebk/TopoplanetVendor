@@ -190,6 +190,8 @@ Resultado aplicado en el modulo:
 
 Objetivo: recuperar una de las capacidades declaradas en los tipos legacy.
 
+Estado actual: completado.
+
 Entregables:
 
 - `exportable`, `exportHeader`, `exportKey`, `exportFormat` por columna.
@@ -199,6 +201,13 @@ Entregables:
 Criterio de cierre:
 
 - Una pantalla puede exportar sin reimplementar mapeo de columnas.
+
+Resultado aplicado en el modulo:
+
+- `GenericDataTableColumn` soporta `exportable`, `exportHeader`, `exportKey` y `exportFormat`.
+- V1 expone `exportDataTableCsv(...)` y `prepareDataTablePrint(...)` desde `custom-data-table-v1.public.ts`.
+- `GenericDataTable.vue` anade `exportCsv()` y `preparePrint()` en la API expuesta via `ref`.
+- Las columnas `actions` quedan excluidas automaticamente del CSV y del payload de impresion.
 
 ## Sprint 9. Opciones dinamicas para columnas tipo lista
 

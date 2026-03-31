@@ -103,6 +103,45 @@ export interface GenericDataTableCountBarProps {
   excludedLabel?: string
 }
 
+export interface GenericDataTableExportSource<Row extends GenericDataTableRow> {
+  columns: Array<GenericDataTableColumn<Row>>
+  rows: Row[]
+}
+
+export interface GenericDataTableCsvExportOptions {
+  delimiter?: string
+  lineBreak?: '\n' | '\r\n'
+  includeBom?: boolean
+}
+
+export interface GenericDataTablePrintOptions {
+  title?: string | null
+}
+
+export interface GenericDataTablePreparedExportColumn<
+  Row extends GenericDataTableRow
+> {
+  field: keyof Row & string
+  exportKey: string
+  header: string
+}
+
+export interface GenericDataTablePreparedPrintRow<
+  Row extends GenericDataTableRow
+> {
+  row: Row
+  values: Record<string, string>
+}
+
+export interface GenericDataTablePreparedPrintPayload<
+  Row extends GenericDataTableRow
+> {
+  title: string | null
+  generatedAt: string
+  columns: Array<GenericDataTablePreparedExportColumn<Row>>
+  rows: Array<GenericDataTablePreparedPrintRow<Row>>
+}
+
 export type GenericDataTableSelectionMode = 'none' | 'multiple'
 
 export type GenericDataTableSelectionOverrideMode = 'selected' | 'unselected'
@@ -170,6 +209,14 @@ export type GenericDataTableExpose<Row extends GenericDataTableRow> = Pick<
 > & {
   refresh: () => Promise<void>
   clearFilters: () => void
+  exportCsv: (
+    rows?: Row[],
+    options?: GenericDataTableCsvExportOptions
+  ) => string
+  preparePrint: (
+    rows?: Row[],
+    options?: GenericDataTablePrintOptions
+  ) => GenericDataTablePreparedPrintPayload<Row>
 }
 
 export interface GenericDataTableToolbarSlotPayload<
@@ -266,6 +313,10 @@ export interface GenericDataTableColumn<Row extends GenericDataTableRow> {
   booleanTagSeverity?: GenericDataTableBooleanTagSeverity
   decimals?: number
   format?: (value: unknown, row: Row) => string
+  exportable?: boolean
+  exportHeader?: string
+  exportKey?: string
+  exportFormat?: (value: unknown, row: Row) => unknown
   actions?: Array<GenericDataTableAction<Row>>
 }
 

@@ -467,13 +467,17 @@ import PrimeInputNumber from 'primevue/inputnumber'
 import PrimeInputText from 'primevue/inputtext'
 import PrimeTag from 'primevue/tag'
 import GenericDataTableCountBar from './GenericDataTableCountBar.vue'
+import { exportDataTableCsv, prepareDataTablePrint } from './tableExport'
 import type {
   GenericDataTableAction,
   GenericDataTableActionPayload,
+  GenericDataTableCsvExportOptions,
   GenericDataTableExpose,
   GenericDataTableColumn,
   GenericDataTableFilterValue,
   GenericDataTableLoadPayload,
+  GenericDataTablePreparedPrintPayload,
+  GenericDataTablePrintOptions,
   GenericDataTableProviderErrorPayload,
   GenericDataTableProps,
   GenericDataTableQuery,
@@ -1269,6 +1273,32 @@ const resolveRowClass = (row: GenericDataTableRow): string[] => {
   ].filter(Boolean)
 }
 
+const exportCsv = (
+  rows?: GenericDataTableRow[],
+  options?: GenericDataTableCsvExportOptions
+): string => {
+  return exportDataTableCsv(
+    {
+      columns: props.columns,
+      rows: rows ?? resolvedRows.value
+    },
+    options
+  )
+}
+
+const preparePrint = (
+  rows?: GenericDataTableRow[],
+  options?: GenericDataTablePrintOptions
+): GenericDataTablePreparedPrintPayload<GenericDataTableRow> => {
+  return prepareDataTablePrint(
+    {
+      columns: props.columns,
+      rows: rows ?? resolvedRows.value
+    },
+    options
+  )
+}
+
 defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
   selectAllPage: (rows) => selectionState.selectAllPage(rows),
   selectAllFiltered: (rows) => selectionState.selectAllFiltered(rows),
@@ -1276,7 +1306,9 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
   refreshVisibleRows: (rows) => selectionState.refreshVisibleRows(rows),
   getSelectionPayload: () => selectionState.getSelectionPayload(),
   refresh: () => onRefresh(),
-  clearFilters: () => onClearFilters()
+  clearFilters: () => onClearFilters(),
+  exportCsv,
+  preparePrint
 })
 </script>
 

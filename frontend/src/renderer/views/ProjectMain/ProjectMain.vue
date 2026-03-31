@@ -14,11 +14,11 @@
               {{ currentProjectDescription }}
             </p>
             <div class="project-main__demo-intro">
-              <span class="project-main__demo-badge">Sprint 7 Demo</span>
+              <span class="project-main__demo-badge">Sprint 8 Demo</span>
               <p class="app-copy app-copy--muted">
-                Tabla temporal para validar acciones por fila, estados disabled,
-                politica clara de click en fila y ajustes minimos de
-                accesibilidad en la V1.
+                Tabla temporal para validar exportacion CSV, preparacion de
+                impresion y exclusion automatica de columnas de acciones en la
+                V1.
               </p>
             </div>
           </div>
@@ -27,10 +27,10 @@
 
       <PrimeCard class="app-panel project-main__panel">
         <template #title>
-          <span>CustomDataTableV1 Actions Demo</span>
+          <span>CustomDataTableV1 Export Demo</span>
         </template>
         <template #subtitle>
-          Provider mode with action metadata, disabled rows and accessibility
+          Provider mode with batch selection, CSV export and print preparation
         </template>
         <template #content>
           <div class="app-stack app-stack--compact">
@@ -150,6 +150,28 @@
 
             <div class="project-main__query-panel">
               <div class="project-main__query-header">
+                <span class="project-main__query-title"> CSV export </span>
+                <span class="project-main__query-caption">
+                  Uses the public API to export the full filtered result without
+                  remapping columns; the actions column is skipped automatically
+                </span>
+              </div>
+              <pre class="project-main__query-code">{{ demoCsvPreview }}</pre>
+            </div>
+
+            <div class="project-main__query-panel">
+              <div class="project-main__query-header">
+                <span class="project-main__query-title"> Print payload </span>
+                <span class="project-main__query-caption">
+                  Structured print-ready payload built from the same column
+                  contract
+                </span>
+              </div>
+              <pre class="project-main__query-code">{{ demoPrintPreview }}</pre>
+            </div>
+
+            <div class="project-main__query-panel">
+              <div class="project-main__query-header">
                 <span class="project-main__query-title"> Batch request </span>
                 <span class="project-main__query-caption">
                   Real example using `toBatchRequest(selection)` from the public
@@ -177,7 +199,9 @@ import {
 } from '@/renderer/stores/stores.exports'
 import type { CoreProjectResponse } from '@/renderer/stores/stores.exports'
 import {
+  exportDataTableCsv,
   GenericDataTable,
+  prepareDataTablePrint,
   toBatchRequest,
   type GenericDataTableActionHandler,
   type GenericDataTableColumn,
@@ -342,6 +366,7 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
   {
     field: 'auditCode',
     header: 'Audit Code',
+    exportHeader: 'Audit code',
     sortable: true,
     filterable: true,
     matchMode: 'endsWith',
@@ -365,6 +390,7 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
     filterable: true,
     filterType: 'text',
     displayField: 'originName',
+    exportHeader: 'Origin',
     backendField: 'originName',
     tooltipField: 'originDescription',
     idIconClass: (row) =>
@@ -388,6 +414,7 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
     type: 'boolean',
     sortable: true,
     filterable: true,
+    exportHeader: 'Origin source',
     backendField: 'originActive',
     booleanLabels: {
       trueLabel: 'Active source',
@@ -400,6 +427,7 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
       false: 'warning',
       null: 'secondary'
     },
+    exportFormat: (value) => (value === true ? 'Active' : 'Legacy'),
     align: 'center',
     minWidth: '11rem'
   },
@@ -409,6 +437,7 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
     type: 'date',
     sortable: true,
     filterable: true,
+    exportHeader: 'Reviewed date',
     backendField: 'reviewedAt',
     paramTransform: (value) => {
       if (!(value instanceof Date)) {
@@ -430,6 +459,16 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
     filterable: true,
     matchMode: 'equals',
     decimals: 1,
+    exportHeader: 'Compliance (%)',
+    exportFormat: (value) => {
+      const numericValue = Number(value)
+
+      if (Number.isNaN(numericValue)) {
+        return ''
+      }
+
+      return numericValue.toFixed(1)
+    },
     align: 'right',
     minWidth: '9rem'
   },
@@ -513,6 +552,34 @@ const demoBatchRequestPreview = computed(() => {
   }
 
   return JSON.stringify(batchRequest, null, 2)
+})
+
+const demoCsvPreview = computed(() => {
+  return exportDataTableCsv(
+    {
+      columns: demoColumns,
+      rows: demoFilteredRows.value
+    },
+    {
+      includeBom: false
+    }
+  )
+})
+
+const demoPrintPreview = computed(() => {
+  return JSON.stringify(
+    prepareDataTablePrint(
+      {
+        columns: demoColumns,
+        rows: demoFilteredRows.value
+      },
+      {
+        title: 'Filtered demo audits'
+      }
+    ),
+    null,
+    2
+  )
 })
 
 const isDemoRowDisabled = (row: DemoAuditRow): boolean => !row.originActive

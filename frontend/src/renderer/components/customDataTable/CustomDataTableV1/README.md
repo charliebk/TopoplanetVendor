@@ -10,6 +10,7 @@ La intencion de esta carpeta es que pueda copiarse a otro proyecto sin arrastrar
 
 - `GenericDataTable.vue`: componente visual principal.
 - `GenericDataTableCountBar.vue`: contador desacoplado reutilizable para listados.
+- `tableExport.ts`: helpers publicos para exportar CSV y preparar impresion.
 - `toBatchRequest.ts`: helper publico para traducir seleccion detallada a request batch.
 - `useGenericDataTableQuery.ts`: normalizacion de query y traduccion a filtros de PrimeVue.
 - `useGenericDataTableSelection.ts`: seleccion avanzada con `select all filtered`, overrides y payload estable.
@@ -35,8 +36,10 @@ Importa siempre desde `custom-data-table-v1.public.ts` para que la carpeta tenga
 
 ```ts
 import {
+  exportDataTableCsv,
   GenericDataTable,
   GenericDataTableCountBar,
+  prepareDataTablePrint,
   toBatchRequest,
   useGenericDataTableSelection,
   useGenericDataTableQuery,
@@ -99,6 +102,7 @@ Compatibilidad asumida por implementacion actual:
 - `refresh`: emite `{ query, providerMode }` al usar el boton integrado de refresh o la API expuesta.
 - `selection-change`: emite un payload estable para operaciones batch con `query`, `allFiltered`, `selectedKeys`, `unselectedKeys`, `selectedCount` y `selectedRows` visibles/materializados.
 - El mismo payload incluye `batch`, un bloque derivado listo para backend con `strategy`, `filterQuery`, `includeKeys`, `excludeKeys`, `disabledKeys`, `ready` y `reason`.
+- Sprint 8 anade `exportDataTableCsv(...)` y `prepareDataTablePrint(...)` para reutilizar el mismo contrato de columnas al exportar.
 
 ### Props de seleccion
 
@@ -122,6 +126,17 @@ Compatibilidad asumida por implementacion actual:
 - Politica de interaccion: los controles interactivos internos, como checkboxes y botones de accion, siempre frenan la propagacion; `row-click` solo se emite para filas habilitadas.
 - `GenericDataTableAction` soporta `tooltip`, `class`, `disabled`, `severity`, `label` e `icon` para modelar acciones por fila.
 - `tooltip` y `class` aceptan valor fijo o resolver por fila.
+
+### Exportacion e impresion
+
+- `exportable`: permite excluir columnas concretas del CSV y del payload de impresion.
+- `exportHeader`: redefine la cabecera exportada sin tocar el encabezado visible.
+- `exportKey`: usa otra propiedad de la fila al exportar; por defecto se toma `displayField || field`.
+- `exportFormat`: transforma el valor exportado sin afectar el render visual.
+- Las columnas `actions` se excluyen automaticamente aunque no declares `exportable: false`.
+- `exportDataTableCsv({ columns, rows })` genera un CSV a partir del mismo contrato de columnas que consume la tabla.
+- `prepareDataTablePrint({ columns, rows })` devuelve `{ title, generatedAt, columns, rows }` listo para una vista de impresion.
+- La API expuesta via `ref` tambien incorpora `exportCsv()` y `preparePrint()`; por defecto operan sobre las filas visibles/resueltas, pero aceptan un array explicito si la pantalla necesita otro subconjunto.
 
 ### Booleanos y accesibilidad
 
@@ -159,7 +174,7 @@ Contrato simplificado para endpoints batch:
 - `selection.batch.ready === false` indica que todavia no es seguro ejecutar una operacion batch filtrada.
 - `toBatchRequest(selection)` devuelve ese mismo contrato simplificado sin que el consumidor tenga que leer `selection.batch` directamente.
 
-Desde Sprint 6, la API expuesta via `ref` tambien incorpora `refresh()` y `clearFilters()` para que la vista consumidora pueda disparar recarga o limpiar filtros sin envolver la tabla.
+Desde Sprint 6, la API expuesta via `ref` tambien incorpora `refresh()` y `clearFilters()` para que la vista consumidora pueda disparar recarga o limpiar filtros sin envolver la tabla. Desde Sprint 8, ese mismo `ref` tambien puede llamar `exportCsv()` y `preparePrint()`.
 
 ## Ejemplo de acciones por fila
 
@@ -204,6 +219,21 @@ const columns: Array<GenericDataTableColumn<AuditRow>> = [
 const isRowDisabled = (row: AuditRow) => !row.originActive
 const disabledFilteredRowKeys = computed(() =>
   filteredRows.value.filter(isRowDisabled).map((row) => String(row.id))
+)
+
+const csvContent = exportDataTableCsv({
+  columns,
+  rows: filteredRows.value
+})
+
+const printPayload = prepareDataTablePrint(
+  {
+    columns,
+    rows: filteredRows.value
+  },
+  {
+    title: 'Audit export'
+  }
 )
 ```
 
@@ -255,6 +285,11 @@ const disabledFilteredRowKeys = computed(() =>
 La tabla esta pensada como componente controlado: el padre mantiene la query, escucha `update:query` y recarga datos.
 
 Ademas, desde Sprint 4 tambien puede operar en modo provider: el padre sigue siendo duenio de la query publica, pero la tabla ejecuta un `dataProvider` asincrono y normaliza `rows`, `totalRecords`, `overallTotal`, `baselineTotal` y errores.
+
+Para Sprint 8, la regla practica es esta:
+
+- Si quieres exportar la pagina visible o el resultado ya resuelto dentro del componente, usa `tableRef.value?.exportCsv()` o `tableRef.value?.preparePrint()`.
+- Si quieres exportar un subconjunto especifico o un resultado filtrado que la pantalla ya resolvio, usa `exportDataTableCsv({ columns, rows })` o `prepareDataTablePrint({ columns, rows })` directamente desde la API publica.
 
 ### Ejemplo minimo de consumo controlado
 
