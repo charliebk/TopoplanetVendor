@@ -2,5 +2,19 @@
   "placeholder": "Tela base do projeto atual. O dashboard real sera conectado aqui no proximo passo.",
   "fallbackTitle": "Projeto atual",
   "fallbackCode": "Sem codigo",
-  "fallbackDescription": "Nao ha informacoes disponiveis para o projeto selecionado."
+  "fallbackDescription": "Nao ha informacoes disponiveis para o projeto selecionado.",
+  "modules": {
+    "defaultTitle": "Modulo do projeto",
+    "defaultDescription": "Tela base do modulo atual do projeto.",
+    "logsTitle": "Logs",
+    "logsDescription": "A cronologia operacional e os logs do projeto serao conectados aqui.",
+    "settingsTitle": "Configuracoes",
+    "settingsDescription": "A configuracao geral e as preferencias do projeto serao conectadas aqui.",
+    "vendorsTitle": "Vendors",
+    "vendorsDescription": "A manutencao de vendors do projeto sera conectada aqui.",
+    "productsTitle": "Produtos",
+    "productsDescription": "A manutencao de produtos associados ao projeto sera conectada aqui.",
+    "questionsTitle": "Perguntas",
+    "questionsDescription": "A gestao do banco de perguntas do projeto sera conectada aqui."
+  }
 }

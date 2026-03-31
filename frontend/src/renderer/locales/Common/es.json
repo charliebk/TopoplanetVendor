@@ -8,8 +8,33 @@
   "title": {
     "main": "Pantalla Principal",
     "projectMain": "Proyecto Actual",
+    "projectLogs": "Logs del Proyecto",
+    "projectSettings": "Configuracion del Proyecto",
+    "projectVendors": "Vendors del Proyecto",
+    "projectProducts": "Productos del Proyecto",
+    "projectQuestions": "Preguntas del Proyecto",
     "second": "Segunda Pantalla",
     "error": "Se produjo un error"
+  },
+  "actions": {
+    "closeProject": "Cerrar proyecto"
+  },
+  "workspace": {
+    "currentProject": "Proyecto {project}",
+    "loadingProject": "Cargando proyecto actual...",
+    "noProject": "sin seleccionar",
+    "localDatabase": "SQLite local",
+    "ready": "Workspace listo",
+    "menus": {
+      "project": "Proyecto",
+      "dashboard": "Dashboard",
+      "logs": "Logs",
+      "settings": "Configuracion",
+      "modules": "Modulos",
+      "vendors": "Vendors",
+      "products": "Productos",
+      "questions": "Preguntas"
+    }
   },
   "menu": {
     "change-theme": "Cambiar de Tema",

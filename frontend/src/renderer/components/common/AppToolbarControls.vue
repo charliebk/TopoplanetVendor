@@ -1,6 +1,7 @@
 <template>
   <div class="app-toolbar-controls">
     <button
+      v-if="isVisibleTheme"
       type="button"
       class="app-toolbar-controls__theme-button"
       :aria-label="themeToggleLabel"
@@ -15,6 +16,7 @@
     </button>
 
     <PrimeSelectButton
+      v-if="isVisibleLanguage"
       v-model="selectedLocale"
       :options="languageOptions"
       option-label="label"
@@ -25,9 +27,22 @@
     />
 
     <PrimeTag
+      v-if="isVisibleVersion"
       :value="`v${appVersion}`"
       severity="contrast"
       rounded
+    />
+
+    <PrimeButton
+      v-if="isVisibleCloseProject"
+      :aria-label="t('actions.closeProject')"
+      :title="t('actions.closeProject')"
+      icon="pi pi-times"
+      text
+      rounded
+      severity="secondary"
+      class="app-toolbar-controls__close-button"
+      @click="emit('close-project')"
     />
   </div>
 </template>
@@ -41,8 +56,24 @@ import {
 } from '@/renderer/stores/stores.exports'
 import { isSupportedUiLocale } from '@/renderer/stores/preferences/preferences.types'
 
-defineProps<{
-  appVersion: string
+withDefaults(
+  defineProps<{
+    appVersion: string
+    isVisibleLanguage?: boolean
+    isVisibleTheme?: boolean
+    isVisibleVersion?: boolean
+    isVisibleCloseProject?: boolean
+  }>(),
+  {
+    isVisibleLanguage: true,
+    isVisibleTheme: true,
+    isVisibleVersion: true,
+    isVisibleCloseProject: false
+  }
+)
+
+const emit = defineEmits<{
+  (event: 'close-project'): void
 }>()
 
 const preferencesStore = usePreferencesStore()
@@ -155,6 +186,10 @@ const handleLocaleChange = (
 .app-toolbar-controls__language-toggle {
   align-self: center;
   flex: 0 0 auto;
+}
+
+.app-toolbar-controls__close-button {
+  min-height: 1.8rem;
 }
 
 :deep(.app-toolbar-controls__language-toggle .p-selectbutton) {

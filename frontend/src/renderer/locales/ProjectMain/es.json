@@ -2,5 +2,19 @@
   "placeholder": "Pantalla base del proyecto actual. Aqui cablearemos el dashboard real en el siguiente paso.",
   "fallbackTitle": "Proyecto actual",
   "fallbackCode": "Sin codigo",
-  "fallbackDescription": "No hay informacion disponible para el proyecto seleccionado."
+  "fallbackDescription": "No hay informacion disponible para el proyecto seleccionado.",
+  "modules": {
+    "defaultTitle": "Modulo del proyecto",
+    "defaultDescription": "Pantalla base del modulo actual del proyecto.",
+    "logsTitle": "Logs",
+    "logsDescription": "Aqui conectaremos la cronologia operativa y los logs del proyecto.",
+    "settingsTitle": "Configuracion",
+    "settingsDescription": "Aqui conectaremos la configuracion general y preferencias del proyecto.",
+    "vendorsTitle": "Vendors",
+    "vendorsDescription": "Aqui conectaremos el mantenimiento de vendors del proyecto.",
+    "productsTitle": "Productos",
+    "productsDescription": "Aqui conectaremos el mantenimiento de productos asociados al proyecto.",
+    "questionsTitle": "Preguntas",
+    "questionsDescription": "Aqui conectaremos la gestion del banco de preguntas del proyecto."
+  }
 }

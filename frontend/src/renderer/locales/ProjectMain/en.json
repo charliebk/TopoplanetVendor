@@ -2,5 +2,19 @@
   "placeholder": "Base screen for the current project. The real dashboard will be wired here next.",
   "fallbackTitle": "Current project",
   "fallbackCode": "No code",
-  "fallbackDescription": "There is no information available for the selected project."
+  "fallbackDescription": "There is no information available for the selected project.",
+  "modules": {
+    "defaultTitle": "Project module",
+    "defaultDescription": "Base screen for the current project module.",
+    "logsTitle": "Logs",
+    "logsDescription": "The project operational timeline and logs will be wired here.",
+    "settingsTitle": "Settings",
+    "settingsDescription": "The project configuration and preferences will be wired here.",
+    "vendorsTitle": "Vendors",
+    "vendorsDescription": "The project vendor maintenance flow will be wired here.",
+    "productsTitle": "Products",
+    "productsDescription": "The project product maintenance flow will be wired here.",
+    "questionsTitle": "Questions",
+    "questionsDescription": "The project question bank management will be wired here."
+  }
 }

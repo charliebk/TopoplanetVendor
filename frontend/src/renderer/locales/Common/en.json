@@ -8,8 +8,33 @@
   "title": {
     "main": "Main Screen",
     "projectMain": "Current Project",
+    "projectLogs": "Project Logs",
+    "projectSettings": "Project Settings",
+    "projectVendors": "Project Vendors",
+    "projectProducts": "Project Products",
+    "projectQuestions": "Project Questions",
     "second": "Second Screen",
     "error": "Unknown Error"
+  },
+  "actions": {
+    "closeProject": "Close project"
+  },
+  "workspace": {
+    "currentProject": "Project {project}",
+    "loadingProject": "Loading current project...",
+    "noProject": "none selected",
+    "localDatabase": "Local SQLite",
+    "ready": "Workspace ready",
+    "menus": {
+      "project": "Project",
+      "dashboard": "Dashboard",
+      "logs": "Logs",
+      "settings": "Settings",
+      "modules": "Modules",
+      "vendors": "Vendors",
+      "products": "Products",
+      "questions": "Questions"
+    }
   },
   "menu": {
     "change-theme": "Change Theme",

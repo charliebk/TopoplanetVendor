@@ -11,6 +11,7 @@ import Divider from 'primevue/divider'
 import Dropdown from 'primevue/dropdown'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
+import Menubar from 'primevue/menubar'
 import Message from 'primevue/message'
 import MultiSelect from 'primevue/multiselect'
 import Password from 'primevue/password'
@@ -39,6 +40,7 @@ const commonComponents = {
   Dropdown,
   InputNumber,
   InputText,
+  Menubar,
   Message,
   MultiSelect,
   Password,
