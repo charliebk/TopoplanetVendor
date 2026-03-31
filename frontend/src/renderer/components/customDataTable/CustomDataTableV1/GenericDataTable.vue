@@ -146,6 +146,7 @@
       :show-gridlines="showGridlines"
       :data-key="rowKey"
       :filters="primeFilters"
+      :row-class="resolveRowClass"
       :rows-per-page-options="rowsPerPageOptions"
       @page="onPage"
       @sort="onSort"
@@ -165,7 +166,8 @@
               :binary="true"
               :model-value="selectionState.allVisibleSelected.value"
               :indeterminate="selectionState.someVisibleSelected.value"
-              :disabled="resolvedRows.length === 0"
+              :disabled="getSelectableRows(resolvedRows).length === 0"
+              aria-label="Select visible rows"
               @update:model-value="onToggleVisibleRows"
             />
           </div>
@@ -179,6 +181,8 @@
             <PrimeCheckbox
               :binary="true"
               :model-value="selectionState.isRowSelected(slotProps.data)"
+              :disabled="isRowDisabled(slotProps.data)"
+              :aria-label="`Select ${resolveRowAriaLabel(slotProps.data)}`"
               @update:model-value="
                 (value) => onRowSelectionChange(slotProps.data, value)
               "
@@ -240,39 +244,62 @@
                 class="generic-data-table__actions"
                 @click.stop
               >
-                <PrimeButton
+                <span
                   v-for="action in column.actions ?? []"
                   :key="action.key"
-                  type="button"
-                  :icon="action.icon"
-                  :label="action.label"
-                  :severity="action.severity ?? 'secondary'"
-                  text
-                  size="small"
-                  :class="action.class"
-                  :title="action.tooltip"
-                  :aria-label="action.tooltip ?? action.label ?? action.key"
-                  :disabled="resolveActionDisabled(action, slotProps.data)"
-                  @click.stop="
-                    emit('action', {
-                      actionKey: action.key,
-                      row: slotProps.data
-                    })
+                  class="generic-data-table__action-shell"
+                  :title="
+                    resolveActionTooltip(action, slotProps.data) || undefined
                   "
-                />
+                >
+                  <PrimeButton
+                    type="button"
+                    :icon="action.icon"
+                    :label="action.label"
+                    :severity="action.severity ?? 'secondary'"
+                    text
+                    size="small"
+                    :class="resolveActionClass(action, slotProps.data)"
+                    :aria-label="resolveActionAriaLabel(action, slotProps.data)"
+                    :disabled="isActionDisabled(action, slotProps.data)"
+                    @click.stop="onActionClick(action, slotProps.data)"
+                  />
+                </span>
               </div>
 
-              <PrimeTag
+              <span
                 v-else-if="column.type === 'boolean'"
-                :value="
-                  formatBooleanValue(readValue(slotProps.data, column.field))
-                "
-                :severity="
+                class="generic-data-table__boolean-cell"
+                :aria-label="`${column.header}: ${resolveBooleanLabel(
+                  column,
                   readValue(slotProps.data, column.field)
-                    ? 'success'
-                    : 'secondary'
-                "
-              />
+                )}`"
+              >
+                <PrimeTag
+                  v-if="column.booleanTag !== false"
+                  :value="
+                    resolveBooleanLabel(
+                      column,
+                      readValue(slotProps.data, column.field)
+                    )
+                  "
+                  :severity="
+                    resolveBooleanSeverity(
+                      column,
+                      readValue(slotProps.data, column.field)
+                    )
+                  "
+                />
+
+                <span v-else>
+                  {{
+                    resolveBooleanLabel(
+                      column,
+                      readValue(slotProps.data, column.field)
+                    )
+                  }}
+                </span>
+              </span>
 
               <span v-else>
                 {{ formatCellValue(column, slotProps.data) }}
@@ -424,7 +451,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
+import { computed, useAttrs, useSlots } from 'vue'
 import DataTable, {
   type DataTablePageEvent,
   type DataTableRowClickEvent,
@@ -499,6 +526,7 @@ const props = withDefaults(
 )
 
 const slots = useSlots()
+const attrs = useAttrs()
 
 const emit = defineEmits<{
   (event: 'update:query', payload: GenericDataTableQuery): void
@@ -555,6 +583,10 @@ const resolvedRows = computed(() =>
 )
 
 const selectionEnabled = computed(() => props.selectionMode === 'multiple')
+
+const hasRowClickListener = computed(() => {
+  return typeof attrs.onRowClick === 'function'
+})
 
 const resolvedLoading = computed(
   () => props.loading || providerState.loading.value
@@ -821,16 +853,125 @@ const resolveIdIconClass = (
   return column.idIconClass ?? 'pi pi-circle'
 }
 
-const formatBooleanValue = (value: unknown): string => {
+const resolveBooleanLabel = (
+  column: GenericDataTableColumn<GenericDataTableRow>,
+  value: unknown
+): string => {
   if (value === true) {
-    return 'Yes'
+    return column.booleanLabels?.trueLabel ?? 'Yes'
   }
 
   if (value === false) {
-    return 'No'
+    return column.booleanLabels?.falseLabel ?? 'No'
   }
 
-  return '-'
+  return column.booleanLabels?.nullLabel ?? '-'
+}
+
+const resolveBooleanSeverity = (
+  column: GenericDataTableColumn<GenericDataTableRow>,
+  value: unknown
+): 'secondary' | 'success' | 'info' | 'warning' | 'danger' | 'contrast' => {
+  if (value === true) {
+    return column.booleanTagSeverity?.true ?? 'success'
+  }
+
+  if (value === false) {
+    return column.booleanTagSeverity?.false ?? 'warning'
+  }
+
+  return column.booleanTagSeverity?.null ?? 'secondary'
+}
+
+const isRowDisabled = (row: GenericDataTableRow): boolean => {
+  if (typeof props.rowDisabled === 'function') {
+    return props.rowDisabled(row)
+  }
+
+  return props.rowDisabled === true
+}
+
+const getSelectableRows = (
+  rows: GenericDataTableRow[]
+): GenericDataTableRow[] => {
+  return rows.filter((row) => !isRowDisabled(row))
+}
+
+const resolveRowAriaLabel = (row: GenericDataTableRow): string => {
+  const rowKeyValue = row[props.rowKey]
+
+  if (rowKeyValue === null || rowKeyValue === undefined) {
+    return 'row'
+  }
+
+  return `row ${String(rowKeyValue)}`
+}
+
+const resolveActionTooltip = (
+  action: GenericDataTableAction<GenericDataTableRow>,
+  row: GenericDataTableRow
+): string => {
+  if (typeof action.tooltip === 'function') {
+    return action.tooltip(row) ?? ''
+  }
+
+  return action.tooltip ?? ''
+}
+
+const resolveActionClass = (
+  action: GenericDataTableAction<GenericDataTableRow>,
+  row: GenericDataTableRow
+): Array<string | string[] | Record<string, boolean>> => {
+  const resolvedClass =
+    typeof action.class === 'function' ? action.class(row) : action.class
+
+  return [
+    'generic-data-table__action-button',
+    `generic-data-table__action-button--${action.key}`,
+    {
+      'generic-data-table__action-button--disabled': isActionDisabled(
+        action,
+        row
+      )
+    },
+    ...(resolvedClass ? [resolvedClass] : [])
+  ]
+}
+
+const resolveActionAriaLabel = (
+  action: GenericDataTableAction<GenericDataTableRow>,
+  row: GenericDataTableRow
+): string => {
+  return resolveActionTooltip(action, row) || action.label || action.key
+}
+
+const isActionDisabled = (
+  action: GenericDataTableAction<GenericDataTableRow>,
+  row: GenericDataTableRow
+): boolean => {
+  if (isRowDisabled(row)) {
+    return true
+  }
+
+  if (typeof action.disabled === 'function') {
+    return action.disabled(row)
+  }
+
+  return action.disabled === true
+}
+
+const onActionClick = (
+  action: GenericDataTableAction<GenericDataTableRow>,
+  row: GenericDataTableRow
+): void => {
+  if (isActionDisabled(action, row)) {
+    return
+  }
+
+  emit('action', {
+    actionKey: action.key,
+    row
+  })
 }
 
 const formatCellValue = (
@@ -923,17 +1064,6 @@ const resolveMaxFractionDigits = (
   return column.decimals ?? 2
 }
 
-const resolveActionDisabled = (
-  action: GenericDataTableAction<GenericDataTableRow>,
-  row: GenericDataTableRow
-): boolean => {
-  if (typeof action.disabled === 'function') {
-    return action.disabled(row)
-  }
-
-  return action.disabled === true
-}
-
 const onPage = (event: DataTablePageEvent): void => {
   emit('update:query', setPage(event.page, event.rows))
 }
@@ -979,19 +1109,19 @@ const onRowSelectionChange = (
 
 const onToggleVisibleRows = (value: boolean | null | undefined): void => {
   if (value === true) {
-    selectionState.selectAllPage(resolvedRows.value)
+    selectionState.selectAllPage(getSelectableRows(resolvedRows.value))
     return
   }
 
-  selectionState.clearVisibleRows(resolvedRows.value)
+  selectionState.clearVisibleRows(getSelectableRows(resolvedRows.value))
 }
 
 const onSelectAllPage = (): void => {
-  selectionState.selectAllPage(resolvedRows.value)
+  selectionState.selectAllPage(getSelectableRows(resolvedRows.value))
 }
 
 const onSelectAllFiltered = (): void => {
-  selectionState.selectAllFiltered(resolvedRows.value)
+  selectionState.selectAllFiltered(getSelectableRows(resolvedRows.value))
 }
 
 const onClearSelection = (): void => {
@@ -999,7 +1129,23 @@ const onClearSelection = (): void => {
 }
 
 const onRowClick = (event: DataTableRowClickEvent): void => {
+  if (isRowDisabled(event.data as GenericDataTableRow)) {
+    return
+  }
+
   emit('row-click', event.data as GenericDataTableRow)
+}
+
+const resolveRowClass = (row: GenericDataTableRow): string[] => {
+  const disabled = isRowDisabled(row)
+
+  return [
+    'generic-data-table__row',
+    disabled ? 'generic-data-table__row--disabled' : '',
+    !disabled && hasRowClickListener.value
+      ? 'generic-data-table__row--clickable'
+      : ''
+  ].filter(Boolean)
 }
 
 defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
@@ -1070,6 +1216,20 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.generic-data-table__action-shell {
+  display: inline-flex;
+}
+
+.generic-data-table__action-button--disabled {
+  opacity: 0.55;
+}
+
+.generic-data-table__boolean-cell {
+  display: inline-flex;
+  align-items: center;
 }
 
 .generic-data-table__id-icon-cell {
@@ -1089,6 +1249,18 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
 }
 
 :deep(.generic-data-table .p-datatable-tbody > tr) {
+  cursor: default;
+}
+
+:deep(
+  .generic-data-table .p-datatable-tbody > tr.generic-data-table__row--clickable
+) {
   cursor: pointer;
+}
+
+:deep(
+  .generic-data-table .p-datatable-tbody > tr.generic-data-table__row--disabled
+) {
+  opacity: 0.6;
 }
 </style>

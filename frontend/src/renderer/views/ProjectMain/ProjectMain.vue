@@ -14,11 +14,11 @@
               {{ currentProjectDescription }}
             </p>
             <div class="project-main__demo-intro">
-              <span class="project-main__demo-badge">Sprint 6 Demo</span>
+              <span class="project-main__demo-badge">Sprint 7 Demo</span>
               <p class="app-copy app-copy--muted">
-                Tabla temporal para validar toolbar extensible, count bar
-                desacoplado, `dataProvider` asincrono y seleccion avanzada sin
-                envolver la tabla con otra shell externa.
+                Tabla temporal para validar acciones por fila, estados disabled,
+                politica clara de click en fila y ajustes minimos de
+                accesibilidad en la V1.
               </p>
             </div>
           </div>
@@ -27,10 +27,10 @@
 
       <PrimeCard class="app-panel project-main__panel">
         <template #title>
-          <span>CustomDataTableV1 Toolbar Demo</span>
+          <span>CustomDataTableV1 Actions Demo</span>
         </template>
         <template #subtitle>
-          Provider mode with toolbar slots, refresh button and count bar
+          Provider mode with action metadata, disabled rows and accessibility
         </template>
         <template #content>
           <div class="app-stack app-stack--compact">
@@ -50,15 +50,22 @@
               show-count-bar
               count-bar-position="both"
               count-bar-show-shown
+              :row-disabled="isDemoRowDisabled"
               @update:query="onDemoQueryChange"
               @row-click="onDemoRowClick"
+              @action="onDemoAction"
               @selection-change="onDemoSelectionChange"
               @refresh="onDemoRefresh"
             >
               <template #toolbar-main="slotProps">
-                <span class="project-main__toolbar-pill">
-                  {{ slotProps.filteredTotal }} filtered audits
-                </span>
+                <div class="project-main__toolbar-group">
+                  <span class="project-main__toolbar-pill">
+                    {{ slotProps.filteredTotal }} filtered audits
+                  </span>
+                  <span class="project-main__toolbar-note">
+                    Legacy Import rows are disabled for click and actions
+                  </span>
+                </div>
               </template>
 
               <template #toolbar-actions>
@@ -86,10 +93,25 @@
             <div class="project-main__query-panel">
               <div class="project-main__query-header">
                 <span class="project-main__query-title">
+                  Last interaction
+                </span>
+                <span class="project-main__query-caption">
+                  Row clicks ignore disabled rows and action buttons never
+                  bubble
+                </span>
+              </div>
+              <pre class="project-main__query-code">{{
+                demoInteractionLog
+              }}</pre>
+            </div>
+
+            <div class="project-main__query-panel">
+              <div class="project-main__query-header">
+                <span class="project-main__query-title">
                   Emitted backend query
                 </span>
                 <span class="project-main__query-caption">
-                  Temporary inspection block for Sprint 6 validation
+                  Temporary inspection block for Sprint 7 validation
                 </span>
               </div>
               <pre class="project-main__query-code">{{ demoQueryPreview }}</pre>
@@ -139,6 +161,7 @@ import {
 import type { CoreProjectResponse } from '@/renderer/stores/stores.exports'
 import {
   GenericDataTable,
+  type GenericDataTableActionHandler,
   type GenericDataTableColumn,
   type GenericDataTableDataProvider,
   type GenericDataTableExpose,
@@ -182,6 +205,7 @@ const demoQuery = ref<GenericDataTableQuery>({
 const demoSelection =
   ref<GenericDataTableSelectionPayload<DemoAuditRow> | null>(null)
 const demoRefreshCount = ref(0)
+const demoInteractionLog = ref('No interaction registered yet.')
 
 const categoryOptions = [
   { label: 'Safety', value: 1 },
@@ -341,6 +365,27 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
     minWidth: '11rem'
   },
   {
+    field: 'originActive',
+    header: 'Origin Status',
+    type: 'boolean',
+    sortable: true,
+    filterable: true,
+    backendField: 'originActive',
+    booleanLabels: {
+      trueLabel: 'Active source',
+      falseLabel: 'Legacy source',
+      nullLabel: 'Unknown'
+    },
+    booleanTag: true,
+    booleanTagSeverity: {
+      true: 'success',
+      false: 'warning',
+      null: 'secondary'
+    },
+    align: 'center',
+    minWidth: '11rem'
+  },
+  {
     field: 'reviewedAt',
     header: 'Reviewed At',
     type: 'date',
@@ -369,6 +414,42 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
     decimals: 1,
     align: 'right',
     minWidth: '9rem'
+  },
+  {
+    field: 'id',
+    header: 'Actions',
+    type: 'actions',
+    align: 'center',
+    minWidth: '14rem',
+    actions: [
+      {
+        key: 'inspect',
+        icon: 'pi pi-search',
+        label: 'Inspect',
+        tooltip: 'Open the audit detail panel',
+        class:
+          'project-main__action-button project-main__action-button--inspect'
+      },
+      {
+        key: 'approve',
+        icon: 'pi pi-check',
+        label: 'Approve',
+        tooltip: 'Approve only active audits with compliance >= 90%',
+        class:
+          'project-main__action-button project-main__action-button--approve',
+        disabled: (row) => row.compliance < 90
+      },
+      {
+        key: 'archive',
+        icon: 'pi pi-box',
+        label: 'Archive',
+        tooltip: 'Archive audits that came from legacy sources',
+        class:
+          'project-main__action-button project-main__action-button--archive',
+        severity: 'danger',
+        disabled: (row) => row.originActive
+      }
+    ]
   }
 ]
 
@@ -397,6 +478,8 @@ const demoSelectionPreview = computed(() => {
 
   return JSON.stringify(demoSelection.value, null, 2)
 })
+
+const isDemoRowDisabled = (row: DemoAuditRow): boolean => !row.originActive
 
 const applyMatchMode = (
   candidate: unknown,
@@ -517,7 +600,11 @@ const onDemoQueryChange: GenericDataTableQueryChangeHandler = (nextQuery) => {
 }
 
 const onDemoRowClick: GenericDataTableRowClickHandler<DemoAuditRow> = (row) => {
-  console.info('Demo row clicked', row)
+  demoInteractionLog.value = `row-click -> ${row.auditCode}`
+}
+
+const onDemoAction: GenericDataTableActionHandler<DemoAuditRow> = (payload) => {
+  demoInteractionLog.value = `${payload.actionKey} -> ${payload.row.auditCode}`
 }
 
 const onDemoSelectionChange: GenericDataTableSelectionChangeHandler<
@@ -610,9 +697,26 @@ onMounted((): void => {
   font-weight: 600;
 }
 
+.project-main__toolbar-group {
+  display: grid;
+  gap: 0.35rem;
+}
+
 .project-main__toolbar-note {
   color: var(--app-text-muted);
   font-size: 0.82rem;
+}
+
+.project-main__action-button--inspect {
+  color: #275efe;
+}
+
+.project-main__action-button--approve {
+  color: #1f7a4d;
+}
+
+.project-main__action-button--archive {
+  color: #b63a3a;
 }
 
 .project-main__query-panel {

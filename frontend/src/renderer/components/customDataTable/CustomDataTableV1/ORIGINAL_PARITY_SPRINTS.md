@@ -165,6 +165,8 @@ Resultado aplicado en el modulo:
 
 Objetivo: completar el comportamiento interactivo que el original esperaba.
 
+Estado actual: completado.
+
 Entregables:
 
 - Tooltips por accion.
@@ -176,6 +178,13 @@ Entregables:
 Criterio de cierre:
 
 - Las columnas de acciones cubren el mismo rango funcional que `ColumnAction` del original.
+
+Resultado aplicado en el modulo:
+
+- `GenericDataTable.vue` resuelve `tooltip`, `class`, `disabled` y `severity` por accion, y bloquea propagacion desde botones y checkboxes internos.
+- V1 soporta `rowDisabled` para bloquear `row-click`, acciones y seleccion visible en filas deshabilitadas, con affordance visual diferenciada.
+- Las columnas booleanas soportan `booleanLabels`, `booleanTag` y `booleanTagSeverity`, con `aria-label` minimo en controles y estado booleano.
+- `ProjectMain.vue` valida el flujo con una demo temporal que incluye acciones por fila, filas legacy deshabilitadas y registro de la ultima interaccion.
 
 ## Sprint 8. Exportacion e impresion
 

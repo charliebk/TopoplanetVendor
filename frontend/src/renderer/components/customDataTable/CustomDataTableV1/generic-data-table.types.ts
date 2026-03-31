@@ -188,12 +188,31 @@ export interface GenericDataTableSelectionOptions<
   onChange?: (payload: GenericDataTableSelectionPayload<Row>) => void
 }
 
+export type GenericDataTableClassValue =
+  | string
+  | string[]
+  | Record<string, boolean>
+
+export interface GenericDataTableBooleanLabels {
+  trueLabel?: string
+  falseLabel?: string
+  nullLabel?: string
+}
+
+export interface GenericDataTableBooleanTagSeverity {
+  true?: 'secondary' | 'success' | 'info' | 'warning' | 'danger' | 'contrast'
+  false?: 'secondary' | 'success' | 'info' | 'warning' | 'danger' | 'contrast'
+  null?: 'secondary' | 'success' | 'info' | 'warning' | 'danger' | 'contrast'
+}
+
 export interface GenericDataTableAction<Row extends GenericDataTableRow> {
   key: string
-  icon: string
+  icon?: string
   label?: string
-  tooltip?: string
-  class?: string
+  tooltip?: string | ((row: Row) => string | null | undefined)
+  class?:
+    | GenericDataTableClassValue
+    | ((row: Row) => GenericDataTableClassValue | null | undefined)
   disabled?: boolean | ((row: Row) => boolean)
   severity?:
     | 'secondary'
@@ -222,6 +241,9 @@ export interface GenericDataTableColumn<Row extends GenericDataTableRow> {
   paramTransform?: (value: GenericDataTableFilterValue, row?: Row) => unknown
   tooltipField?: keyof Row & string
   idIconClass?: string | ((row: Row) => string)
+  booleanLabels?: GenericDataTableBooleanLabels
+  booleanTag?: boolean
+  booleanTagSeverity?: GenericDataTableBooleanTagSeverity
   decimals?: number
   format?: (value: unknown, row: Row) => string
   actions?: Array<GenericDataTableAction<Row>>
@@ -266,6 +288,7 @@ export interface GenericDataTableProps<Row extends GenericDataTableRow> {
   showCountBar?: boolean
   countBarPosition?: 'top' | 'bottom' | 'both'
   countBarShowShown?: boolean
+  rowDisabled?: boolean | ((row: Row) => boolean)
   showPaginator?: boolean
   dataProvider?: GenericDataTableDataProvider<Row>
 }

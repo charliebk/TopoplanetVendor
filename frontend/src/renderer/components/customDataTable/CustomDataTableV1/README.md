@@ -94,7 +94,7 @@ Compatibilidad asumida por implementacion actual:
 - `action`: emite `{ actionKey, row }` para columnas de acciones.
 - `load`: emite `{ query, rows, totalRecords, overallTotal, baselineTotal }` al resolver un `dataProvider`.
 - `provider-error`: emite `{ query, message, cause }` cuando falla un `dataProvider`.
-- `refresh`: emite `{ query, providerActive }` al usar el boton integrado de refresh o la API expuesta.
+- `refresh`: emite `{ query, providerMode }` al usar el boton integrado de refresh o la API expuesta.
 - `selection-change`: emite un payload estable para operaciones batch con `query`, `allFiltered`, `selectedKeys`, `unselectedKeys`, `selectedCount` y `selectedRows` visibles/materializados.
 
 ### Props de seleccion
@@ -109,6 +109,20 @@ Compatibilidad asumida por implementacion actual:
 - `showCountBar`, `countBarPosition`, `countBarShowShown`: contador desacoplado arriba, abajo o en ambos extremos.
 - `emptyMessage`, `loadingMessage`, `errorMessage`: mensajes parametrizables para estados comunes.
 - `showClearFiltersButton`, `clearFiltersLabel`: limpieza integrada de filtros.
+
+### Interaccion de filas y acciones
+
+- `rowDisabled`: boolean o resolver por fila para bloquear `row-click`, acciones y seleccion visible en filas deshabilitadas.
+- Politica de interaccion: los controles interactivos internos, como checkboxes y botones de accion, siempre frenan la propagacion; `row-click` solo se emite para filas habilitadas.
+- `GenericDataTableAction` soporta `tooltip`, `class`, `disabled`, `severity`, `label` e `icon` para modelar acciones por fila.
+- `tooltip` y `class` aceptan valor fijo o resolver por fila.
+
+### Booleanos y accesibilidad
+
+- `booleanLabels`: personaliza etiquetas `true`, `false` y `null`.
+- `booleanTag`: permite usar `Tag` de PrimeVue o render texto plano.
+- `booleanTagSeverity`: ajusta la severidad visual por estado booleano.
+- La V1 aplica `aria-label` a checkboxes de seleccion, botones de accion y celdas booleanas.
 
 ### Slots de extension
 
@@ -130,6 +144,60 @@ El payload de seleccion queda pensado para backend batch operations:
 - `allFiltered=true`: usar `query` + `unselectedKeys` como exclusiones.
 
 Desde Sprint 6, la API expuesta via `ref` tambien incorpora `refresh()` y `clearFilters()` para que la vista consumidora pueda disparar recarga o limpiar filtros sin envolver la tabla.
+
+## Ejemplo de acciones por fila
+
+```ts
+const columns: Array<GenericDataTableColumn<AuditRow>> = [
+  {
+    field: 'originActive',
+    header: 'Origin Status',
+    type: 'boolean',
+    booleanLabels: {
+      trueLabel: 'Active source',
+      falseLabel: 'Legacy source'
+    },
+    booleanTag: true,
+    booleanTagSeverity: {
+      true: 'success',
+      false: 'warning'
+    }
+  },
+  {
+    field: 'id',
+    header: 'Actions',
+    type: 'actions',
+    actions: [
+      {
+        key: 'inspect',
+        icon: 'pi pi-search',
+        label: 'Inspect',
+        tooltip: 'Open the audit detail panel'
+      },
+      {
+        key: 'approve',
+        icon: 'pi pi-check',
+        label: 'Approve',
+        class: (row) => (row.compliance >= 90 ? 'is-ready' : 'is-muted'),
+        disabled: (row) => row.compliance < 90
+      }
+    ]
+  }
+]
+
+const isRowDisabled = (row: AuditRow) => !row.originActive
+```
+
+```vue
+<GenericDataTable
+  :columns="columns"
+  :rows="rows"
+  :query="query"
+  :row-disabled="isRowDisabled"
+  @row-click="onRowClick"
+  @action="onAction"
+/>
+```
 
 ## Ejemplo de toolbar integrada
 
