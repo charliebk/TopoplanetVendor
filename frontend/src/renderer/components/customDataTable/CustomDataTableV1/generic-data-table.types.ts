@@ -40,6 +40,50 @@ export interface GenericDataTableOption {
   value: string | number | boolean | null
 }
 
+export interface GenericDataTableProviderRequest<
+  Row extends GenericDataTableRow
+> {
+  query: GenericDataTableQuery
+  columns: Array<GenericDataTableColumn<Row>>
+}
+
+export interface GenericDataTableProviderSuccess<
+  Row extends GenericDataTableRow
+> {
+  ok: true
+  rows: Row[]
+  totalRecords: number
+  overallTotal?: number | null
+}
+
+export interface GenericDataTableProviderFailure {
+  ok: false
+  message: string
+  cause?: unknown
+}
+
+export type GenericDataTableProviderResult<Row extends GenericDataTableRow> =
+  | GenericDataTableProviderSuccess<Row>
+  | GenericDataTableProviderFailure
+
+export type GenericDataTableDataProvider<Row extends GenericDataTableRow> = (
+  request: GenericDataTableProviderRequest<Row>
+) => Promise<GenericDataTableProviderResult<Row>>
+
+export interface GenericDataTableLoadPayload<Row extends GenericDataTableRow> {
+  query: GenericDataTableQuery
+  rows: Row[]
+  totalRecords: number
+  overallTotal: number | null
+  baselineTotal: number | null
+}
+
+export interface GenericDataTableProviderErrorPayload {
+  query: GenericDataTableQuery
+  message: string
+  cause?: unknown
+}
+
 export interface GenericDataTableAction<Row extends GenericDataTableRow> {
   key: string
   icon: string
@@ -50,7 +94,6 @@ export interface GenericDataTableAction<Row extends GenericDataTableRow> {
   severity?:
     | 'secondary'
     | 'success'
-    | 'info'
     | 'warning'
     | 'help'
     | 'danger'
@@ -109,6 +152,7 @@ export interface GenericDataTableProps<Row extends GenericDataTableRow> {
   showGlobalFilter?: boolean
   showClearFilters?: boolean
   showPaginator?: boolean
+  dataProvider?: GenericDataTableDataProvider<Row>
 }
 
 export interface GenericDataTableLoadResult<Row extends GenericDataTableRow> {
@@ -128,12 +172,19 @@ export type GenericDataTableUpdateQueryPayload = GenericDataTableQuery
 export type GenericDataTableRowClickPayload<Row extends GenericDataTableRow> =
   Row
 
-export type GenericDataTableEventName = 'update:query' | 'row-click' | 'action'
+export type GenericDataTableEventName =
+  | 'update:query'
+  | 'row-click'
+  | 'action'
+  | 'load'
+  | 'provider-error'
 
 export interface GenericDataTableEmits<Row extends GenericDataTableRow> {
   (event: 'update:query', payload: GenericDataTableUpdateQueryPayload): void
   (event: 'row-click', payload: GenericDataTableRowClickPayload<Row>): void
   (event: 'action', payload: GenericDataTableActionPayload<Row>): void
+  (event: 'load', payload: GenericDataTableLoadPayload<Row>): void
+  (event: 'provider-error', payload: GenericDataTableProviderErrorPayload): void
 }
 
 export type GenericDataTableQueryChangeHandler = (
@@ -146,6 +197,14 @@ export type GenericDataTableRowClickHandler<Row extends GenericDataTableRow> = (
 
 export type GenericDataTableActionHandler<Row extends GenericDataTableRow> = (
   payload: GenericDataTableActionPayload<Row>
+) => void
+
+export type GenericDataTableLoadHandler<Row extends GenericDataTableRow> = (
+  payload: GenericDataTableLoadPayload<Row>
+) => void
+
+export type GenericDataTableProviderErrorHandler = (
+  payload: GenericDataTableProviderErrorPayload
 ) => void
 
 export interface GenericDataTablePrimeFilter {
@@ -173,4 +232,16 @@ export interface GenericDataTableQueryController {
     value: GenericDataTableFilterValue
   ) => GenericDataTableQuery
   clearFilters: () => GenericDataTableQuery
+}
+
+export interface GenericDataTableProviderState<
+  Row extends GenericDataTableRow
+> {
+  rows: Ref<Row[]>
+  totalRecords: Ref<number>
+  overallTotal: Ref<number | null>
+  baselineTotal: Ref<number | null>
+  loading: Ref<boolean>
+  error: Ref<GenericDataTableProviderFailure | null>
+  reload: () => Promise<void>
 }

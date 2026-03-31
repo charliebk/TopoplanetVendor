@@ -26,9 +26,9 @@
     </div>
 
     <DataTable
-      :value="rows"
-      :lazy="lazy"
-      :loading="loading"
+      :value="resolvedRows"
+      :lazy="lazy || isProviderMode"
+      :loading="resolvedLoading"
       :paginator="showPaginator"
       :rows="normalizedQuery.size"
       :total-records="resolvedTotalRecords"
@@ -215,13 +215,13 @@
 
       <template #empty>
         <div class="generic-data-table__state-message">
-          {{ emptyMessage }}
+          {{ resolvedEmptyMessage }}
         </div>
       </template>
 
       <template #loading>
         <div class="generic-data-table__state-message">
-          {{ loadingMessage }}
+          {{ resolvedLoadingMessage }}
         </div>
       </template>
     </DataTable>
@@ -247,10 +247,13 @@ import type {
   GenericDataTableActionPayload,
   GenericDataTableColumn,
   GenericDataTableFilterValue,
+  GenericDataTableLoadPayload,
+  GenericDataTableProviderErrorPayload,
   GenericDataTableProps,
   GenericDataTableQuery,
   GenericDataTableRow
 } from './generic-data-table.types'
+import { useGenericDataTableProvider } from './useGenericDataTableProvider'
 import { useGenericDataTableQuery } from './useGenericDataTableQuery'
 
 const props = withDefaults(
@@ -290,12 +293,18 @@ const emit = defineEmits<{
     event: 'action',
     payload: GenericDataTableActionPayload<GenericDataTableRow>
   ): void
+  (
+    event: 'load',
+    payload: GenericDataTableLoadPayload<GenericDataTableRow>
+  ): void
+  (event: 'provider-error', payload: GenericDataTableProviderErrorPayload): void
 }>()
 
 const {
   normalizedQuery,
   primeFilters,
   first,
+  currentQuery,
   setPage,
   setSort,
   setFilterValue,
@@ -306,18 +315,51 @@ const {
   props.query?.size ?? 10
 )
 
+const isProviderMode = computed(() => typeof props.dataProvider === 'function')
+
+const providerState = useGenericDataTableProvider({
+  columns: computed(() => props.columns),
+  query: currentQuery,
+  dataProvider: computed(() => props.dataProvider),
+  enabled: isProviderMode,
+  onLoad: (payload) => emit('load', payload),
+  onError: (payload) => emit('provider-error', payload)
+})
+
 const booleanFilterOptions = [
   { label: 'Yes', value: true },
   { label: 'No', value: false }
 ]
 
+const resolvedRows = computed(() =>
+  isProviderMode.value ? providerState.rows.value : props.rows
+)
+
+const resolvedLoading = computed(
+  () => props.loading || providerState.loading.value
+)
+
 const resolvedTotalRecords = computed(() => {
+  if (isProviderMode.value) {
+    return providerState.totalRecords.value
+  }
+
   if (typeof props.totalRecords === 'number') {
     return props.totalRecords
   }
 
   return props.rows.length
 })
+
+const resolvedEmptyMessage = computed(() => {
+  if (providerState.error.value) {
+    return providerState.error.value.message
+  }
+
+  return props.emptyMessage
+})
+
+const resolvedLoadingMessage = computed(() => props.loadingMessage)
 
 const globalFilterValue = computed(() => {
   const value = primeFilters.value.global?.value

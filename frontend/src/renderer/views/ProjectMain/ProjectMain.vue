@@ -14,11 +14,11 @@
               {{ currentProjectDescription }}
             </p>
             <div class="project-main__demo-intro">
-              <span class="project-main__demo-badge">Sprint 3 Demo</span>
+              <span class="project-main__demo-badge">Sprint 4 Demo</span>
               <p class="app-copy app-copy--muted">
                 Tabla temporal para validar filtros `list`, `date`, `idIcon`,
-                `startsWith`, `endsWith` y `paramTransform` con carga lazy
-                mockeada.
+                `startsWith`, `endsWith` y `paramTransform` con `dataProvider`
+                asincrono.
               </p>
             </div>
           </div>
@@ -36,11 +36,9 @@
           <div class="app-stack app-stack--compact">
             <GenericDataTable
               :columns="demoColumns"
-              :rows="demoRows"
+              :rows="[]"
               :query="demoQuery"
-              :loading="demoLoading"
-              :lazy="true"
-              :total-records="demoTotalRecords"
+              :data-provider="demoDataProvider"
               empty-message="No demo audits match the current filters"
               global-filter-placeholder="Filter demo audits"
               @update:query="onDemoQueryChange"
@@ -53,7 +51,7 @@
                   >Emitted backend query</span
                 >
                 <span class="project-main__query-caption">
-                  Temporary inspection block for Sprint 3 validation
+                  Temporary inspection block for Sprint 4 validation
                 </span>
               </div>
               <pre class="project-main__query-code">{{ demoQueryPreview }}</pre>
@@ -77,6 +75,7 @@ import type { CoreProjectResponse } from '@/renderer/stores/stores.exports'
 import {
   GenericDataTable,
   type GenericDataTableColumn,
+  type GenericDataTableDataProvider,
   type GenericDataTableQuery,
   type GenericDataTableQueryChangeHandler,
   type GenericDataTableRowClickHandler
@@ -102,9 +101,6 @@ type DemoAuditRow = {
   compliance: number
 }
 
-const demoLoading = ref(false)
-const demoRows = ref<DemoAuditRow[]>([])
-const demoTotalRecords = ref(0)
 const demoQuery = ref<GenericDataTableQuery>({
   page: 0,
   size: 5,
@@ -420,24 +416,23 @@ const applyDemoQuery = (query: GenericDataTableQuery): DemoAuditRow[] => {
   return nextRows
 }
 
-const loadDemoRows = async (query: GenericDataTableQuery): Promise<void> => {
-  demoLoading.value = true
+const demoDataProvider: GenericDataTableDataProvider<DemoAuditRow> = async ({
+  query
+}) => {
+  const filteredRows = applyDemoQuery(query)
+  const start = query.page * query.size
+  const end = start + query.size
 
-  try {
-    const filteredRows = applyDemoQuery(query)
-    const start = query.page * query.size
-    const end = start + query.size
-
-    demoTotalRecords.value = filteredRows.length
-    demoRows.value = filteredRows.slice(start, end)
-  } finally {
-    demoLoading.value = false
+  return {
+    ok: true,
+    rows: filteredRows.slice(start, end),
+    totalRecords: filteredRows.length,
+    overallTotal: demoDataset.length
   }
 }
 
 const onDemoQueryChange: GenericDataTableQueryChangeHandler = (nextQuery) => {
   demoQuery.value = nextQuery
-  void loadDemoRows(nextQuery)
 }
 
 const onDemoRowClick: GenericDataTableRowClickHandler<DemoAuditRow> = (row) => {
@@ -464,7 +459,6 @@ const loadCurrentProject = async (): Promise<void> => {
 
 onMounted((): void => {
   void loadCurrentProject()
-  void loadDemoRows(demoQuery.value)
 })
 </script>
 

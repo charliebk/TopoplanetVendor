@@ -88,10 +88,14 @@ Compatibilidad asumida por implementacion actual:
 - `update:query`: emite la query normalizada al cambiar pagina, orden o filtros.
 - `row-click`: emite la fila pulsada.
 - `action`: emite `{ actionKey, row }` para columnas de acciones.
+- `load`: emite `{ query, rows, totalRecords, overallTotal, baselineTotal }` al resolver un `dataProvider`.
+- `provider-error`: emite `{ query, message, cause }` cuando falla un `dataProvider`.
 
 ## Patron de uso recomendado
 
 La tabla esta pensada como componente controlado: el padre mantiene la query, escucha `update:query` y recarga datos.
+
+Ademas, desde Sprint 4 tambien puede operar en modo provider: el padre sigue siendo duenio de la query publica, pero la tabla ejecuta un `dataProvider` asincrono y normaliza `rows`, `totalRecords`, `overallTotal`, `baselineTotal` y errores.
 
 ### Ejemplo minimo de consumo controlado
 
@@ -273,6 +277,105 @@ onMounted(() => {
     :total-records="totalRecords"
     @update:query="onLazyQueryChange"
     @action="onAction"
+  />
+</template>
+```
+
+### Ejemplo minimo de provider mode
+
+Este caso elimina la logica manual de carga en la vista. La tabla recarga automaticamente cuando cambia `query` y conserva el mismo contrato de filtros y orden.
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import {
+  GenericDataTable,
+  type GenericDataTableColumn,
+  type GenericDataTableDataProvider,
+  type GenericDataTableLoadHandler,
+  type GenericDataTableProviderErrorHandler,
+  type GenericDataTableQuery,
+  type GenericDataTableQueryChangeHandler
+} from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
+
+type AuditRow = {
+  id: number
+  code: string
+  owner: string
+  reviewedAt: string
+}
+
+const query = ref<GenericDataTableQuery>({
+  page: 0,
+  size: 10,
+  sortField: 'reviewedAt',
+  sortOrder: -1,
+  globalFilter: null,
+  filters: {}
+})
+
+const columns: Array<GenericDataTableColumn<AuditRow>> = [
+  { field: 'code', header: 'Code', sortable: true, filterable: true },
+  { field: 'owner', header: 'Owner', sortable: true, filterable: true },
+  {
+    field: 'reviewedAt',
+    header: 'Reviewed At',
+    type: 'date',
+    sortable: true,
+    filterable: true
+  }
+]
+
+const dataProvider: GenericDataTableDataProvider<AuditRow> = async ({
+  query
+}) => {
+  const response = await fetch(
+    '/api/audits?' +
+      new URLSearchParams({
+        page: String(query.page),
+        size: String(query.size)
+      })
+  )
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      message: 'Failed to load audits'
+    }
+  }
+
+  const data = await response.json()
+
+  return {
+    ok: true,
+    rows: data.rows,
+    totalRecords: data.total,
+    overallTotal: data.overallTotal
+  }
+}
+
+const onQueryChange: GenericDataTableQueryChangeHandler = (nextQuery) => {
+  query.value = nextQuery
+}
+
+const onLoad: GenericDataTableLoadHandler<AuditRow> = (payload) => {
+  console.info('Provider load resolved', payload)
+}
+
+const onProviderError: GenericDataTableProviderErrorHandler = (payload) => {
+  console.error('Provider load failed', payload)
+}
+</script>
+
+<template>
+  <GenericDataTable
+    :columns="columns"
+    :rows="[]"
+    :query="query"
+    :data-provider="dataProvider"
+    @update:query="onQueryChange"
+    @load="onLoad"
+    @provider-error="onProviderError"
   />
 </template>
 ```

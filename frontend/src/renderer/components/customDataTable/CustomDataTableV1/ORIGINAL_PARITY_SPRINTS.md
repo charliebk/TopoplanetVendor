@@ -91,6 +91,8 @@ Resultado aplicado en el modulo:
 
 Objetivo: evitar que cada pantalla reinvente la carga remota.
 
+Estado actual: completado.
+
 Entregables:
 
 - Definir interfaz de `dataProvider` asincrono para V1.
@@ -101,6 +103,13 @@ Entregables:
 Criterio de cierre:
 
 - La tabla puede operar en modo controlado actual y en modo provider sin duplicar logica de carga.
+
+Resultado aplicado en el modulo:
+
+- V1 expone `GenericDataTableDataProvider` y tipos publicos para request, success, failure, estado y payloads de eventos.
+- `GenericDataTable.vue` detecta provider mode y reutiliza la misma query publica para recargar datos asincronamente.
+- `useGenericDataTableProvider.ts` normaliza `rows`, `totalRecords`, `overallTotal`, `baselineTotal` y errores.
+- `ProjectMain.vue` valida el flujo con una demo temporal basada en `dataProvider` asincrono.
 
 ## Sprint 5. Seleccion avanzada
 
