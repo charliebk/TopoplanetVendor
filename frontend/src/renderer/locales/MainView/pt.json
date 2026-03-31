@@ -1,0 +1,55 @@
+{
+  "hero": {
+    "title": "Project Hub",
+    "subtitle": "Ponto de entrada para criar, abrir e manter o trabalho dos projetos fluindo sem ruido de template."
+  },
+  "toolbar": {
+    "light": "Claro",
+    "dark": "Escuro",
+    "themeLight": "Usar modo claro",
+    "themeDark": "Usar modo escuro",
+    "language": "Idioma"
+  },
+  "sections": {
+    "startTitle": "Inicio",
+    "startSubtitle": "Acoes principais e projetos disponiveis no banco de dados.",
+    "projectsTitle": "Projetos",
+    "projectsCount": "{count} ativos",
+    "recentTitle": "Recentes",
+    "recentSubtitle": "Projetos abertos ou atualizados recentemente.",
+    "tutorialsTitle": "Tutorial",
+    "tutorialsSubtitle": "Guias curtos para explicar como a aplicacao funciona e como o fluxo de trabalho e percorrido."
+  },
+  "actions": {
+    "addProject": "Adicionar projeto",
+    "addProjectHelper": "Criar um novo workspace de avaliacao do zero.",
+    "export": "Exportar",
+    "exportHelper": "Gerar um snapshot do projeto para compartilhar ou fazer backup.",
+    "import": "Importar",
+    "importHelper": "Recuperar um projeto existente a partir de um pacote exportado."
+  },
+  "projects": {
+    "active": "Ativo",
+    "draft": "Rascunho",
+    "review": "Em revisao"
+  },
+  "recent": {
+    "schemaRegenerated": "Schema do project regenerado",
+    "kickoffChecklist": "Checklist de kickoff preparado",
+    "vendorsPending": "Importacao de vendors pendente"
+  },
+  "tutorials": {
+    "gettingStartedTitle": "Criar seu primeiro projeto",
+    "gettingStartedDescription": "Fluxo guiado para criar um novo projeto e entender a estrutura minima.",
+    "importTitle": "Importar uma avaliacao existente",
+    "importDescription": "O que e importado, o que e validado e como evitar inconsistencias ao reidratar dados.",
+    "workflowTitle": "Entender o ciclo de trabalho",
+    "workflowDescription": "De projeto a vendors, produtos, perguntas e respostas sem perder o fio do modelo.",
+    "beginner": "Inicio",
+    "operations": "Operacao",
+    "model": "Modelo",
+    "openTutorial": "Abrir tutorial",
+    "viewFlow": "Ver fluxo",
+    "exploreGuide": "Explorar guia"
+  }
+}

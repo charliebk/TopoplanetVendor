@@ -23,7 +23,6 @@ import ToggleButton from 'primevue/togglebutton'
 import Tooltip from 'primevue/tooltip'
 import Ripple from 'primevue/ripple'
 
-import 'primevue/resources/themes/lara-light-green/theme.css'
 import 'primevue/resources/primevue.min.css'
 import 'primeicons/primeicons.css'
 import 'primeflex/primeflex.css'
@@ -53,7 +52,10 @@ const commonComponents = {
 
 export default {
   install(app: App) {
-    app.use(PrimeVue)
+    app.use(PrimeVue, {
+      ripple: true,
+      inputStyle: 'filled'
+    })
 
     for (const [name, component] of Object.entries(commonComponents)) {
       app.component(name, component)

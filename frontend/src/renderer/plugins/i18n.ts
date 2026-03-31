@@ -1,33 +1,51 @@
 import { createI18n } from 'vue-i18n'
-import en from '@/renderer/locales/en.json'
-import ko from '@/renderer/locales/ko.json'
-import zhHans from '@/renderer/locales/zh-hans.json'
-import zhHant from '@/renderer/locales/zh-hant.json'
-import de from '@/renderer/locales/de.json'
-import es from '@/renderer/locales/es.json'
-import ja from '@/renderer/locales/ja.json'
-import fr from '@/renderer/locales/fr.json'
-import ru from '@/renderer/locales/ru.json'
-import pt from '@/renderer/locales/pt.json'
-import nl from '@/renderer/locales/nl.json'
+import commonEn from '@/renderer/locales/Common/en.json'
+import commonEs from '@/renderer/locales/Common/es.json'
+import commonPt from '@/renderer/locales/Common/pt.json'
+import mainViewEn from '@/renderer/locales/MainView/en.json'
+import mainViewEs from '@/renderer/locales/MainView/es.json'
+import mainViewPt from '@/renderer/locales/MainView/pt.json'
+import errorViewEn from '@/renderer/locales/ErrorView/en.json'
+import errorViewEs from '@/renderer/locales/ErrorView/es.json'
+import errorViewPt from '@/renderer/locales/ErrorView/pt.json'
 import { getCurrentLocale } from '@/renderer/utils'
+import {
+  isSupportedUiLocale,
+  type UiLocale
+} from '@/renderer/stores/preferences/preferences.types'
+
+const resolveLocale = (): UiLocale => {
+  const currentLocale = getCurrentLocale()
+
+  return isSupportedUiLocale(currentLocale) ? currentLocale : 'en'
+}
+
+const en = {
+  ...commonEn,
+  MainView: mainViewEn,
+  ErrorView: errorViewEn
+}
+
+const es = {
+  ...commonEs,
+  MainView: mainViewEs,
+  ErrorView: errorViewEs
+}
+
+const pt = {
+  ...commonPt,
+  MainView: mainViewPt,
+  ErrorView: errorViewPt
+}
 
 export default createI18n({
-  locale: getCurrentLocale(),
+  locale: resolveLocale(),
   fallbackLocale: 'en',
   globalInjection: true,
   silentTranslationWarn: process.env.NODE_ENV !== 'development',
   messages: {
     en,
-    ko,
-    zhHans,
-    zhHant,
-    de,
     es,
-    ja,
-    fr,
-    ru,
-    pt,
-    nl
+    pt
   }
 })

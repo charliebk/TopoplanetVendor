@@ -8,6 +8,7 @@ import Constants, { TrayOptions } from './utils/Constants'
 import IPCs from './IPCs'
 import { createTray, hideWindow, showWindow } from './tray'
 import log from 'electron-log/main'
+import { join } from 'path'
 
 const options = {
   width: Constants.IS_DEV_ENV ? 1500 : 1200,
@@ -32,7 +33,8 @@ export const createMainWindow = async (): Promise<BrowserWindow> => {
   log.silly('Creating new window...')
 
   let opt: BrowserWindowConstructorOptions = {
-    title: Constants.APP_NAME,
+    title: Constants.APP_WINDOW_TITLE,
+    icon: join(Constants.PUBLIC_PATH, Constants.PUBLIC_ASSET_WINDOW_ICON),
     show: false,
     width: options.width,
     height: options.height,
@@ -128,7 +130,8 @@ export const createErrorWindow = async (
   }
 
   errorWindow = new BrowserWindow({
-    title: Constants.APP_NAME,
+    title: Constants.APP_WINDOW_TITLE,
+    icon: join(Constants.PUBLIC_PATH, Constants.PUBLIC_ASSET_WINDOW_ICON),
     show: false,
     resizable: Constants.IS_DEV_ENV,
     webPreferences: Constants.DEFAULT_WEB_PREFERENCES

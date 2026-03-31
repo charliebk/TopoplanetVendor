@@ -7,15 +7,3 @@ import { DefaultLayout } from '@/renderer/components/layout'
     <RouterView />
   </DefaultLayout>
 </template>
-
-<style>
-html {
-  overflow-y: auto !important;
-  user-select: none;
-}
-html,
-body {
-  width: 100%;
-  height: 100%;
-}
-</style>

@@ -1,6 +1,7 @@
 import { join, dirname, resolve } from 'path'
-import { name, version, debug } from '../../../package.json'
+import { version, debug } from '../../../package.json'
 import { fileURLToPath } from 'url'
+import { APP_BRANDING } from '../../shared/branding'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -27,8 +28,8 @@ export default class Constants {
    * END OF FEATURES
    * ------------------------------------------------------ */
 
-  // Display app name (uppercase first letter)
-  static APP_NAME = name.charAt(0).toUpperCase() + name.slice(1)
+  static APP_NAME = APP_BRANDING.applicationName
+  static APP_WINDOW_TITLE = APP_BRANDING.windowTitle
 
   static APP_VERSION = version
 
@@ -37,6 +38,9 @@ export default class Constants {
   static PUBLIC_PATH = Constants.IS_DEV_ENV
     ? resolve(__dirname, '../../src/public')
     : resolve(__dirname, '..')
+
+  static PUBLIC_ASSET_WINDOW_ICON = APP_BRANDING.assets.icon
+  static PUBLIC_ASSET_TRAY_ICON = APP_BRANDING.assets.trayIcon
 
   static IS_MAC = process.platform === 'darwin'
 
@@ -51,7 +55,7 @@ export default class Constants {
     enabled: false,
     trayWindow: false,
     menu: false,
-    tooltip: 'Vutron App',
+    tooltip: APP_BRANDING.trayTooltip,
     margin: { x: 0, y: 0 },
     showAtStartup: false
   }

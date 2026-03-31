@@ -1,0 +1,55 @@
+{
+  "hero": {
+    "title": "Project Hub",
+    "subtitle": "Punto de entrada para crear, abrir y seguir el trabajo de cada proyecto sin ruido del template."
+  },
+  "toolbar": {
+    "light": "Claro",
+    "dark": "Oscuro",
+    "themeLight": "Usar modo claro",
+    "themeDark": "Usar modo oscuro",
+    "language": "Idioma"
+  },
+  "sections": {
+    "startTitle": "Inicio",
+    "startSubtitle": "Accesos principales y proyectos disponibles en la base de datos.",
+    "projectsTitle": "Proyectos",
+    "projectsCount": "{count} activos",
+    "recentTitle": "Recientes",
+    "recentSubtitle": "Proyectos abiertos o actualizados recientemente.",
+    "tutorialsTitle": "Tutorial",
+    "tutorialsSubtitle": "Guias cortas para explicar como funciona la aplicacion y como se recorre el flujo de trabajo."
+  },
+  "actions": {
+    "addProject": "Anadir proyecto",
+    "addProjectHelper": "Crear un nuevo workspace de evaluacion desde cero.",
+    "export": "Exportar",
+    "exportHelper": "Generar un snapshot del proyecto para compartirlo o respaldarlo.",
+    "import": "Importar",
+    "importHelper": "Recuperar un proyecto existente desde un paquete exportado."
+  },
+  "projects": {
+    "active": "Activo",
+    "draft": "Borrador",
+    "review": "En revision"
+  },
+  "recent": {
+    "schemaRegenerated": "Schema project regenerado",
+    "kickoffChecklist": "Checklist de kickoff preparado",
+    "vendorsPending": "Pendiente de importar vendors"
+  },
+  "tutorials": {
+    "gettingStartedTitle": "Crear tu primer proyecto",
+    "gettingStartedDescription": "Recorrido guiado para levantar un proyecto nuevo y entender la estructura minima.",
+    "importTitle": "Importar una evaluacion existente",
+    "importDescription": "Que se importa, que se valida y como evitar inconsistencias al rehidratar datos.",
+    "workflowTitle": "Entender el ciclo de trabajo",
+    "workflowDescription": "De proyecto a vendors, productos, preguntas y respuestas sin perder el hilo del modelo.",
+    "beginner": "Inicio",
+    "operations": "Operacion",
+    "model": "Modelo",
+    "openTutorial": "Abrir tutorial",
+    "viewFlow": "Ver flujo",
+    "exploreGuide": "Explorar guia"
+  }
+}

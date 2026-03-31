@@ -1,0 +1,55 @@
+{
+  "hero": {
+    "title": "Project Hub",
+    "subtitle": "The entry point to create, open, and keep project work moving without template noise."
+  },
+  "toolbar": {
+    "light": "Light",
+    "dark": "Dark",
+    "themeLight": "Use light mode",
+    "themeDark": "Use dark mode",
+    "language": "Language"
+  },
+  "sections": {
+    "startTitle": "Start",
+    "startSubtitle": "Main actions and projects available in the database.",
+    "projectsTitle": "Projects",
+    "projectsCount": "{count} active",
+    "recentTitle": "Recent",
+    "recentSubtitle": "Projects opened or updated most recently.",
+    "tutorialsTitle": "Walkthroughs",
+    "tutorialsSubtitle": "Short guides that explain how the application works and how the workflow is navigated."
+  },
+  "actions": {
+    "addProject": "Add project",
+    "addProjectHelper": "Create a new evaluation workspace from scratch.",
+    "export": "Export",
+    "exportHelper": "Generate a project snapshot to share or back up.",
+    "import": "Import",
+    "importHelper": "Recover an existing project from an exported package."
+  },
+  "projects": {
+    "active": "Active",
+    "draft": "Draft",
+    "review": "In review"
+  },
+  "recent": {
+    "schemaRegenerated": "Project schema regenerated",
+    "kickoffChecklist": "Kickoff checklist prepared",
+    "vendorsPending": "Pending vendor import"
+  },
+  "tutorials": {
+    "gettingStartedTitle": "Create your first project",
+    "gettingStartedDescription": "Guided flow to create a new project and understand the minimum structure.",
+    "importTitle": "Import an existing evaluation",
+    "importDescription": "What is imported, what is validated, and how to avoid inconsistencies while rehydrating data.",
+    "workflowTitle": "Understand the workflow cycle",
+    "workflowDescription": "From project to vendors, products, questions, and answers without losing the model thread.",
+    "beginner": "Start",
+    "operations": "Operations",
+    "model": "Model",
+    "openTutorial": "Open tutorial",
+    "viewFlow": "View flow",
+    "exploreGuide": "Explore guide"
+  }
+}

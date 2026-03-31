@@ -18,7 +18,7 @@ const baseConfig = {
     hardenedRuntime: true,
     gatekeeperAssess: false,
     notarize: false,
-    icon: 'buildAssets/icons/icon.icns',
+    icon: 'buildAssets/icons/app-icon.icns',
     type: 'distribution',
     target: [
       {
@@ -44,7 +44,7 @@ const baseConfig = {
     sign: false
   },
   win: {
-    icon: 'buildAssets/icons/icon.ico',
+    icon: 'buildAssets/icons/app-icon.ico',
     target: [
       {
         target: 'appx',

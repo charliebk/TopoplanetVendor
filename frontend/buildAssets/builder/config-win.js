@@ -14,7 +14,7 @@ const baseConfig = {
     output: './release/${version}'
   },
   win: {
-    icon: 'buildAssets/icons/icon.ico',
+    icon: 'buildAssets/icons/app-icon.ico',
     target: [
       {
         target: 'portable',

@@ -91,7 +91,7 @@ Ruta base: `backend/src/main/java/com/vutron/backend/`
 - `db/`: esquema y bootstrap de base.
 - `controller/`: contratos base de registro/controladores CRUD.
 - `manager/<dominio>/`: capas funcionales del dominio.
-- `io/project/Export` y `io/project/Import`: flujo de export/import de proyectos.
+- `io/coreproject/Export` y `io/coreproject/Import`: flujo de export/import del nucleo reusable de proyectos.
 
 Capas por dominio (`manager/<dominio>/`):
 
@@ -115,16 +115,17 @@ Responsabilidad del backend:
 Convencion SQL congelada para nombres fisicos:
 
 - Los nombres de tablas se definen siempre en singular.
-- Ejemplo actual minimo: `project`.
+- Las tablas base reutilizables del template usan prefijo logico `core`.
+- Ejemplo actual minimo: `coreProject`.
 - Esta regla aplica a nuevas tablas, indices y consultas SQL asociadas.
 
 Arquitectura de datos congelada para esta fase:
 
-- `project` es la raiz funcional de todo el modelo.
-- `vendor` depende de `project` (1:N).
-- `product` depende de `vendor` y `project` (project 1:N vendor, vendor 1:N product).
-- Las variables de negocio son genericas y dependen de `project`.
-- `question` depende de `project` y referencia variables configurables del proyecto.
+- `coreProject` es la raiz funcional reutilizable de todo el modelo.
+- `vendor` depende de `coreProject` (1:N).
+- `product` depende de `vendor` y `coreProject` (coreProject 1:N vendor, vendor 1:N product).
+- Las variables de negocio son genericas y dependen de `coreProject`.
+- `question` depende de `coreProject` y referencia variables configurables del proyecto.
 - `response` representa la respuesta de una `question` para una combinacion `vendor + product`.
 - `evaluator` queda fuera de alcance por ahora.
 
@@ -187,13 +188,13 @@ Ejemplos actuales:
 
 - `GET /health`
 - `GET /api/app-message/hello-world`
-- `GET /api/projects`
-- `GET /api/project/{id}`
-- `POST /api/project`
-- `PUT /api/project/{id}`
-- `DELETE /api/project/{id}`
-- `POST /api/project/export`
-- `POST /api/project/import`
+- `GET /api/core-projects`
+- `GET /api/core-project/{id}`
+- `POST /api/core-project`
+- `PUT /api/core-project/{id}`
+- `DELETE /api/core-project/{id}`
+- `POST /api/core-project/export`
+- `POST /api/core-project/import`
 
 ## 7. Politica de evolucion (sin cambiar arquitectura base)
 

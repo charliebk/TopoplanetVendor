@@ -9,9 +9,9 @@ Definir el backlog funcional de alto nivel para evolucionar el producto sin alte
 ## 2.1 Project Hub
 
 - Proposito: crear, abrir, editar, duplicar y archivar proyectos.
-- Backend esperado: `manager/project` + `manager/projectversion`.
-- Frontend esperado: `views/ProjectHubView`, `renderer/stores/project/project.store.ts`, `renderer/stores/project/project.types.ts`.
-- Estado: base parcial ya existente (`project`).
+- Backend esperado: `manager/coreproject` + `manager/coreprojectversion`.
+- Frontend esperado: `views/ProjectHubView`, `renderer/stores/coreProject/coreProject.store.ts`, `renderer/stores/coreProject/coreProject.types.ts`.
+- Estado: base parcial ya existente (`coreProject`).
 
 ## 2.2 Workspace Shell
 
@@ -93,14 +93,14 @@ Definir el backlog funcional de alto nivel para evolucionar el producto sin alte
 ## 2.13 Versiones de Configuracion
 
 - Proposito: versionar cambios de configuracion y activar version vigente.
-- Backend esperado: `manager/projectversion`.
+- Backend esperado: `manager/coreprojectversion`.
 - Frontend esperado: `views/versions`, `stores/version`.
 - Estado: futuro.
 
 ## 2.14 Importacion/Exportacion
 
 - Proposito: respaldo y restauracion de proyecto completo.
-- Backend esperado: `io/project/Export`, `io/project/Import`.
+- Backend esperado: `io/coreproject/Export`, `io/coreproject/Import`.
 - Frontend esperado: `views/settings/import-export`, `stores/importProject`, `stores/exportProject`.
 - Estado: base parcial ya existente.
 

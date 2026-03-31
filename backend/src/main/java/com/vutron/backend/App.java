@@ -4,7 +4,9 @@ import com.vutron.backend.config.AppConfig;
 import com.vutron.backend.config.Database;
 import com.vutron.backend.controller.ControllerRegister;
 import com.vutron.backend.db.DatabaseSchemaManager;
-import com.vutron.backend.manager.project.Controller.ProjectController;
+import com.vutron.backend.io.coreproject.Export.Controller.ExportCoreProjectController;
+import com.vutron.backend.io.coreproject.Import.Controller.ImportCoreProjectController;
+import com.vutron.backend.manager.coreproject.Controller.CoreProjectController;
 import io.javalin.Javalin;
 
 import javax.sql.DataSource;
@@ -27,34 +29,46 @@ public final class App {
             )
         );
 
-        // project
-        new ProjectController().register(
+        // core project
+        new CoreProjectController().register(
             ControllerRegister.EndpointType.GET,
-            "/api/projects",
+            "/api/core-projects",
             app,
             dataSource
         );
-        new ProjectController().register(
+        new CoreProjectController().register(
             ControllerRegister.EndpointType.GET,
-            "/api/project/{id}",
+            "/api/core-project/{id}",
             app,
             dataSource
         );
-        new ProjectController().register(
+        new CoreProjectController().register(
             ControllerRegister.EndpointType.POST,
-            "/api/project",
+            "/api/core-project",
             app,
             dataSource
         );
-        new ProjectController().register(
+        new CoreProjectController().register(
             ControllerRegister.EndpointType.PUT,
-            "/api/project/{id}",
+            "/api/core-project/{id}",
             app,
             dataSource
         );
-        new ProjectController().register(
+        new CoreProjectController().register(
             ControllerRegister.EndpointType.DELETE,
-            "/api/project/{id}",
+            "/api/core-project/{id}",
+            app,
+            dataSource
+        );
+        new ExportCoreProjectController().register(
+            ControllerRegister.EndpointType.POST,
+            "/api/core-project/export",
+            app,
+            dataSource
+        );
+        new ImportCoreProjectController().register(
+            ControllerRegister.EndpointType.POST,
+            "/api/core-project/import",
             app,
             dataSource
         );

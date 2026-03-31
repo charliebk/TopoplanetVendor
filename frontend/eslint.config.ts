@@ -69,6 +69,18 @@ export default defineConfig([
           }
         }
       ],
+      'vue/html-self-closing': [
+        'error',
+        {
+          html: {
+            void: 'always',
+            normal: 'never',
+            component: 'always'
+          },
+          svg: 'always',
+          math: 'always'
+        }
+      ],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {

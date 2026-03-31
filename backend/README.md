@@ -35,11 +35,13 @@ Servicio por defecto:
 
 - `GET /health`
 - `GET /api/app-messages/hello-world`
-- `GET /api/projects`
-- `POST /api/projects`
-- `DELETE /api/projects/{id}`
-- `POST /api/projects/export`
-- `POST /api/projects/import`
+- `GET /api/core-projects`
+- `GET /api/core-project/{id}`
+- `POST /api/core-project`
+- `PUT /api/core-project/{id}`
+- `DELETE /api/core-project/{id}`
+- `POST /api/core-project/export`
+- `POST /api/core-project/import`
 
 ## Base de datos
 
@@ -49,10 +51,10 @@ Servicio por defecto:
 
 ### Esquema que se garantiza al arrancar
 
-- Tabla `projects`
-- Tabla `users` con relacion `users.project_id -> projects.id`
+- Tabla `coreProject`
+- Tabla `users` con relacion `users.core_project_id -> coreProject.id`
 - Tabla `app_messages`
-- Indices para `projects` y `users`
+- Indices para `coreProject` y `users`
 - Seed `HELLO_WORLD`
 - Seed de super admin global
 

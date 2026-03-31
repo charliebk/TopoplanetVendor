@@ -9,3 +9,5 @@ export async function openExternal(url: string): Promise<void> {
 export async function openFile(type: string): Promise<any> {
   return window.mainApi.invoke('msgOpenFile', type)
 }
+
+export { RENDERER_ASSETS, RENDERER_ASSET_PREFIXES } from './assets'

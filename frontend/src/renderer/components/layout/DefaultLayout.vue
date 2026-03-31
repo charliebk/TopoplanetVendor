@@ -1,14 +1,9 @@
 <template>
   <v-app>
     <v-layout>
-      <HeaderLayout />
       <v-main>
-        <slot />
+        <slot></slot>
       </v-main>
     </v-layout>
   </v-app>
 </template>
-
-<script setup lang="ts">
-import HeaderLayout from '@/renderer/components/layout/HeaderLayout.vue'
-</script>

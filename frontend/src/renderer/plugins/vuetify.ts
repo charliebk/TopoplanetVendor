@@ -1,17 +1,5 @@
 import { createVuetify } from 'vuetify'
-import {
-  ko,
-  en,
-  zhHans,
-  zhHant,
-  de,
-  es,
-  ja,
-  fr,
-  ru,
-  pt,
-  nl
-} from 'vuetify/locale'
+import { en, es, pt } from 'vuetify/locale'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
 import 'vuetify/styles'
 
@@ -19,7 +7,7 @@ import colors from 'vuetify/util/colors'
 
 export default createVuetify({
   locale: {
-    messages: { ko, en, zhHans, zhHant, de, es, ja, fr, ru, pt, nl },
+    messages: { en, es, pt },
     locale: 'en',
     fallback: 'en'
   },

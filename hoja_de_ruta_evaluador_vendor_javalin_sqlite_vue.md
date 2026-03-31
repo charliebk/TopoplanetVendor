@@ -112,7 +112,7 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 
 ## 5. Modelo relacional objetivo en SQLite
 
-### 5.1 Tabla `project`
+### 5.1 Tabla `coreProject`
 
 - `id`
 - `code`
@@ -123,10 +123,10 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 - `updated_at`
 - `archived_at`
 
-### 5.2 Tabla `project_version`
+### 5.2 Tabla `coreProjectVersion`
 
 - `id`
-- `project_id`
+- `core_project_id`
 - `version_number`
 - `label`
 - `change_summary`
@@ -137,7 +137,7 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 ### 5.3 Tabla `vendor`
 
 - `id`
-- `project_id`
+- `core_project_id`
 - `code`
 - `name`
 - `vendor_group`
@@ -147,7 +147,7 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 ### 5.4 Tabla `product`
 
 - `id`
-- `project_id`
+- `core_project_id`
 - `vendor_id`
 - `code`
 - `name`
@@ -159,7 +159,7 @@ Cuando se abre un proyecto, se entra en un workspace con navegación lateral.
 ### 5.5 Tabla `project_variable_type`
 
 - `id`
-- `project_id`
+- `core_project_id`
 - `code`
 - `name`
 - `description`
@@ -328,11 +328,11 @@ Vistas:
 
 Y además un índice compuesto serio en `response`:
 
-- `(project_id, vendor_id, product_id, question_id)`
+- `(core_project_id, vendor_id, product_id, question_id)`
 
 Y un índice único recomendado para evitar duplicados funcionales:
 
-- `UNIQUE(project_id, vendor_id, product_id, question_id)`
+- `UNIQUE(core_project_id, vendor_id, product_id, question_id)`
 
 ---
 
@@ -659,14 +659,14 @@ Construir la primera ventana tipo VS Code para seleccionar proyecto.
 
 ## Backend implicado
 
-- `manager/project/*`
-- `manager/projectversion/*`
+- `manager/coreproject/*`
+- `manager/coreprojectversion/*`
 
 ## Frontend implicado
 
 - `views/ProjectHubView`
 - `components/project-hub/*`
-- `stores/project/*`
+- `stores/coreProject/*`
 
 ## Trabajo exacto
 
@@ -696,20 +696,20 @@ Objetivo:
 pantalla inicial tipo VS Code donde el usuario ve proyectos recientes y puede crear, abrir, duplicar o archivar proyectos.
 
 Backend:
-1. Crea módulo manager/project con Controller, DTO, Repository, Query y Services.
+1. Crea módulo manager/coreproject con Controller, DTO, Repository, Query y Services.
 2. Implementa endpoints:
-   - GET /api/projects
-   - GET /api/project/{id}
-   - POST /api/project
-   - PUT /api/project/{id}
-   - POST /api/project/{id}/duplicate
-   - POST /api/project/{id}/archive
+  - GET /api/core-projects
+  - GET /api/core-project/{id}
+  - POST /api/core-project
+  - PUT /api/core-project/{id}
+  - POST /api/core-project/{id}/duplicate
+  - POST /api/core-project/{id}/archive
 3. Usa SQLite y SQL en Query.
 
 Frontend:
 1. Crea ProjectHubView.vue
 2. Usa PrimeVue DataTable, Dialog y Toolbar
-3. Crea store project
+3. Crea store coreProject
 4. Navega al workspace al abrir proyecto
 
 Quiero implementación archivo por archivo.
@@ -968,7 +968,7 @@ Quiero construir los módulos de vendors y productos en una app de evaluación d
 Reglas:
 1. Vendor y producto no son la misma entidad.
 2. Un vendor puede tener múltiples productos.
-3. Todo cuelga de project_id.
+3. Todo cuelga de core_project_id.
 
 Tareas backend:
 - crear manager/vendor
@@ -1373,7 +1373,7 @@ Prácticamente todas las de configuración y captura.
 
 ## Backend implicado
 
-- `io/project/Import/*`
+- `io/coreproject/Import/*`
 
 ## Frontend implicado
 
@@ -1396,7 +1396,7 @@ Objetivo:
 importar configuración y respuestas desde formatos de intercambio, sin depender de que el frontend lea archivos complejos por sí solo.
 
 Tareas:
-1. Crea módulo io/project/Import con Controller, DTO, Services.
+1. Crea módulo io/coreproject/Import con Controller, DTO, Services.
 2. Diseña proceso de validación previa.
 3. Genera reporte de errores de importación.
 4. Separa import de preguntas, vendors, productos y respuestas.
@@ -1422,7 +1422,7 @@ Poder sacar evidencia, informes y congelar estados.
 
 ## Backend implicado
 
-- `io/project/Export/*`
+- `io/coreproject/Export/*`
 
 ## Frontend implicado
 
@@ -1449,7 +1449,7 @@ poder exportar:
 - snapshot JSON completo del proyecto
 
 Tareas:
-1. Crea módulo io/project/Export.
+1. Crea módulo io/coreproject/Export.
 2. Implementa exportes separados y export completo.
 3. Devuelve archivos listos para descarga.
 4. Mantén el código desacoplado por caso de uso.
