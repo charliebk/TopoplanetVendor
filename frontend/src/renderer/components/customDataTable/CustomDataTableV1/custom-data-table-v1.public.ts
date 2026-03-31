@@ -1,5 +1,6 @@
 export { default as GenericDataTable } from './GenericDataTable.vue'
 export { useGenericDataTableQuery } from './useGenericDataTableQuery'
+export { useGenericDataTableSelection } from './useGenericDataTableSelection'
 
 export type {
   GenericDataTableAction,
@@ -31,7 +32,16 @@ export type {
   GenericDataTableQueryChangeHandler,
   GenericDataTableQueryController,
   GenericDataTableRow,
+  GenericDataTableExpose,
   GenericDataTableRowClickHandler,
   GenericDataTableRowClickPayload,
+  GenericDataTableSelectionChangeHandler,
+  GenericDataTableSelectionController,
+  GenericDataTableSelectionMode,
+  GenericDataTableSelectionOptions,
+  GenericDataTableSelectionOverride,
+  GenericDataTableSelectionOverrideMode,
+  GenericDataTableSelectionPayload,
+  GenericDataTableSelectionState,
   GenericDataTableUpdateQueryPayload
 } from './generic-data-table.types'

@@ -84,6 +84,68 @@ export interface GenericDataTableProviderErrorPayload {
   cause?: unknown
 }
 
+export type GenericDataTableSelectionMode = 'none' | 'multiple'
+
+export type GenericDataTableSelectionOverrideMode = 'selected' | 'unselected'
+
+export interface GenericDataTableSelectionOverride<
+  Row extends GenericDataTableRow
+> {
+  key: string
+  mode: GenericDataTableSelectionOverrideMode
+  row?: Row
+}
+
+export interface GenericDataTableSelectionPayload<
+  Row extends GenericDataTableRow
+> {
+  rowKeyField: string
+  query: GenericDataTableQuery
+  allFiltered: boolean
+  filteredTotal: number | null
+  baselineTotal: number | null
+  selectedCount: number | null
+  visibleSelectedCount: number
+  selectedRows: Row[]
+  selectedKeys: string[]
+  unselectedKeys: string[]
+  overrides: Array<GenericDataTableSelectionOverride<Row>>
+}
+
+export interface GenericDataTableSelectionController<
+  Row extends GenericDataTableRow
+> {
+  isRowSelected: (row: Row) => boolean
+  setRowSelected: (row: Row, selected: boolean) => void
+  selectAllPage: (rows?: Row[]) => void
+  selectAllFiltered: (rows?: Row[]) => void
+  clearSelection: () => void
+  clearVisibleRows: (rows?: Row[]) => void
+  refreshVisibleRows: (rows?: Row[]) => void
+  getSelectionPayload: () => GenericDataTableSelectionPayload<Row>
+}
+
+export type GenericDataTableExpose<Row extends GenericDataTableRow> = Pick<
+  GenericDataTableSelectionController<Row>,
+  | 'selectAllPage'
+  | 'selectAllFiltered'
+  | 'clearSelection'
+  | 'refreshVisibleRows'
+  | 'getSelectionPayload'
+>
+
+export interface GenericDataTableSelectionOptions<
+  Row extends GenericDataTableRow
+> {
+  visibleRows: ComputedRef<Row[]>
+  query: ComputedRef<GenericDataTableQuery>
+  filteredTotal: ComputedRef<number | null>
+  baselineTotal: ComputedRef<number | null>
+  rowKeyField: ComputedRef<string>
+  enabled: ComputedRef<boolean>
+  onChange?: (payload: GenericDataTableSelectionPayload<Row>) => void
+}
+
 export interface GenericDataTableAction<Row extends GenericDataTableRow> {
   key: string
   icon: string
@@ -138,6 +200,7 @@ export interface GenericDataTableProps<Row extends GenericDataTableRow> {
   query?: GenericDataTableQuery
   loading?: boolean
   lazy?: boolean
+  selectionMode?: GenericDataTableSelectionMode
   rowKey?: string
   totalRecords?: number
   rowsPerPageOptions?: number[]
@@ -149,8 +212,12 @@ export interface GenericDataTableProps<Row extends GenericDataTableRow> {
   loadingMessage?: string
   globalFilterPlaceholder?: string
   clearFiltersLabel?: string
+  selectPageLabel?: string
+  selectFilteredLabel?: string
+  clearSelectionLabel?: string
   showGlobalFilter?: boolean
   showClearFilters?: boolean
+  showSelectionToolbar?: boolean
   showPaginator?: boolean
   dataProvider?: GenericDataTableDataProvider<Row>
 }
@@ -177,6 +244,7 @@ export type GenericDataTableEventName =
   | 'row-click'
   | 'action'
   | 'load'
+  | 'selection-change'
   | 'provider-error'
 
 export interface GenericDataTableEmits<Row extends GenericDataTableRow> {
@@ -184,6 +252,10 @@ export interface GenericDataTableEmits<Row extends GenericDataTableRow> {
   (event: 'row-click', payload: GenericDataTableRowClickPayload<Row>): void
   (event: 'action', payload: GenericDataTableActionPayload<Row>): void
   (event: 'load', payload: GenericDataTableLoadPayload<Row>): void
+  (
+    event: 'selection-change',
+    payload: GenericDataTableSelectionPayload<Row>
+  ): void
   (event: 'provider-error', payload: GenericDataTableProviderErrorPayload): void
 }
 
@@ -206,6 +278,10 @@ export type GenericDataTableLoadHandler<Row extends GenericDataTableRow> = (
 export type GenericDataTableProviderErrorHandler = (
   payload: GenericDataTableProviderErrorPayload
 ) => void
+
+export type GenericDataTableSelectionChangeHandler<
+  Row extends GenericDataTableRow
+> = (payload: GenericDataTableSelectionPayload<Row>) => void
 
 export interface GenericDataTablePrimeFilter {
   value: GenericDataTableFilterValue
@@ -244,4 +320,18 @@ export interface GenericDataTableProviderState<
   loading: Ref<boolean>
   error: Ref<GenericDataTableProviderFailure | null>
   reload: () => Promise<void>
+}
+
+export interface GenericDataTableSelectionState<
+  Row extends GenericDataTableRow
+> extends GenericDataTableSelectionController<Row> {
+  selectedRows: Ref<Row[]>
+  allFiltered: Ref<boolean>
+  overrides: Ref<Record<string, GenericDataTableSelectionOverride<Row>>>
+  selectedKeys: ComputedRef<string[]>
+  unselectedKeys: ComputedRef<string[]>
+  visibleSelectedRows: ComputedRef<Row[]>
+  allVisibleSelected: ComputedRef<boolean>
+  someVisibleSelected: ComputedRef<boolean>
+  selectedCount: ComputedRef<number | null>
 }

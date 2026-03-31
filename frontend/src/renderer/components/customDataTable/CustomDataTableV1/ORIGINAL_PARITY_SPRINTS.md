@@ -115,6 +115,8 @@ Resultado aplicado en el modulo:
 
 Objetivo: recuperar la capacidad que hoy aporta `useTableSelection.ts`.
 
+Estado actual: completado.
+
 Entregables:
 
 - Seleccion simple por fila.
@@ -126,6 +128,14 @@ Entregables:
 Criterio de cierre:
 
 - Las operaciones masivas pueden ejecutarse sin perder el contexto de seleccion filtrada.
+
+Resultado aplicado en el modulo:
+
+- V1 incorpora `useGenericDataTableSelection.ts` como capa desacoplada de seleccion avanzada.
+- `GenericDataTable.vue` soporta seleccion por fila, seleccion masiva de pagina y `select all filtered` con overrides por fila.
+- El evento `selection-change` emite un payload estable con `query`, `selectedKeys`, `unselectedKeys`, `selectedCount` y totales filtrados/globales.
+- La tabla expone `refreshVisibleRows()` y `getSelectionPayload()` para resincronizar la seleccion cuando cambian las filas visibles.
+- `ProjectMain.vue` valida el flujo en provider mode mostrando el payload de seleccion emitido.
 
 ## Sprint 6. Toolbar y componentes auxiliares
 

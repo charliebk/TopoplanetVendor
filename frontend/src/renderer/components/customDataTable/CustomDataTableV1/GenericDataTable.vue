@@ -12,17 +12,59 @@
           class="generic-data-table__global-filter"
           @update:model-value="onGlobalFilterChange"
         />
+
+        <span
+          v-if="selectionEnabled"
+          class="generic-data-table__selection-summary"
+        >
+          {{ selectionSummary }}
+        </span>
       </div>
 
-      <PrimeButton
-        v-if="showClearFilters"
-        type="button"
-        icon="pi pi-filter-slash"
-        text
-        severity="secondary"
-        :label="clearFiltersLabel"
-        @click="onClearFilters"
-      />
+      <div class="generic-data-table__toolbar-actions">
+        <PrimeButton
+          v-if="showSelectionToolbar"
+          type="button"
+          icon="pi pi-check-square"
+          text
+          severity="secondary"
+          :label="selectPageLabel"
+          :disabled="resolvedRows.length === 0"
+          @click="onSelectAllPage"
+        />
+
+        <PrimeButton
+          v-if="showSelectionToolbar"
+          type="button"
+          icon="pi pi-plus-circle"
+          text
+          severity="secondary"
+          :label="selectFilteredLabel"
+          :disabled="resolvedTotalRecords === 0"
+          @click="onSelectAllFiltered"
+        />
+
+        <PrimeButton
+          v-if="showSelectionToolbar"
+          type="button"
+          icon="pi pi-times-circle"
+          text
+          severity="secondary"
+          :label="clearSelectionLabel"
+          :disabled="!hasSelection"
+          @click="onClearSelection"
+        />
+
+        <PrimeButton
+          v-if="showClearFilters"
+          type="button"
+          icon="pi pi-filter-slash"
+          text
+          severity="secondary"
+          :label="clearFiltersLabel"
+          @click="onClearFilters"
+        />
+      </div>
     </div>
 
     <DataTable
@@ -46,6 +88,42 @@
       @sort="onSort"
       @row-click="onRowClick"
     >
+      <Column
+        v-if="selectionEnabled"
+        :header-style="{ width: '3.5rem', textAlign: 'center' }"
+        :body-style="{ width: '3.5rem', textAlign: 'center' }"
+      >
+        <template #header>
+          <div
+            class="generic-data-table__selection-cell"
+            @click.stop
+          >
+            <PrimeCheckbox
+              :binary="true"
+              :model-value="selectionState.allVisibleSelected.value"
+              :indeterminate="selectionState.someVisibleSelected.value"
+              :disabled="resolvedRows.length === 0"
+              @update:model-value="onToggleVisibleRows"
+            />
+          </div>
+        </template>
+
+        <template #body="slotProps">
+          <div
+            class="generic-data-table__selection-cell"
+            @click.stop
+          >
+            <PrimeCheckbox
+              :binary="true"
+              :model-value="selectionState.isRowSelected(slotProps.data)"
+              @update:model-value="
+                (value) => onRowSelectionChange(slotProps.data, value)
+              "
+            />
+          </div>
+        </template>
+      </Column>
+
       <template
         v-for="column in columns"
         :key="column.field"
@@ -238,6 +316,7 @@ import DataTable, {
 import Column from 'primevue/column'
 import PrimeButton from 'primevue/button'
 import PrimeCalendar from 'primevue/calendar'
+import PrimeCheckbox from 'primevue/checkbox'
 import PrimeDropdown from 'primevue/dropdown'
 import PrimeInputNumber from 'primevue/inputnumber'
 import PrimeInputText from 'primevue/inputtext'
@@ -245,16 +324,19 @@ import PrimeTag from 'primevue/tag'
 import type {
   GenericDataTableAction,
   GenericDataTableActionPayload,
+  GenericDataTableExpose,
   GenericDataTableColumn,
   GenericDataTableFilterValue,
   GenericDataTableLoadPayload,
   GenericDataTableProviderErrorPayload,
   GenericDataTableProps,
   GenericDataTableQuery,
-  GenericDataTableRow
+  GenericDataTableRow,
+  GenericDataTableSelectionPayload
 } from './generic-data-table.types'
 import { useGenericDataTableProvider } from './useGenericDataTableProvider'
 import { useGenericDataTableQuery } from './useGenericDataTableQuery'
+import { useGenericDataTableSelection } from './useGenericDataTableSelection'
 
 const props = withDefaults(
   defineProps<GenericDataTableProps<GenericDataTableRow>>(),
@@ -269,6 +351,7 @@ const props = withDefaults(
     }),
     loading: false,
     lazy: false,
+    selectionMode: 'none',
     rowKey: 'id',
     totalRecords: undefined,
     rowsPerPageOptions: () => [10, 20, 50],
@@ -280,8 +363,12 @@ const props = withDefaults(
     loadingMessage: 'Loading data...',
     globalFilterPlaceholder: 'Filter all columns',
     clearFiltersLabel: 'Clear filters',
+    selectPageLabel: 'Select page',
+    selectFilteredLabel: 'Select filtered',
+    clearSelectionLabel: 'Clear selection',
     showGlobalFilter: true,
     showClearFilters: true,
+    showSelectionToolbar: true,
     showPaginator: true
   }
 )
@@ -296,6 +383,10 @@ const emit = defineEmits<{
   (
     event: 'load',
     payload: GenericDataTableLoadPayload<GenericDataTableRow>
+  ): void
+  (
+    event: 'selection-change',
+    payload: GenericDataTableSelectionPayload<GenericDataTableRow>
   ): void
   (event: 'provider-error', payload: GenericDataTableProviderErrorPayload): void
 }>()
@@ -335,6 +426,8 @@ const resolvedRows = computed(() =>
   isProviderMode.value ? providerState.rows.value : props.rows
 )
 
+const selectionEnabled = computed(() => props.selectionMode === 'multiple')
+
 const resolvedLoading = computed(
   () => props.loading || providerState.loading.value
 )
@@ -349,6 +442,32 @@ const resolvedTotalRecords = computed(() => {
   }
 
   return props.rows.length
+})
+
+const resolvedBaselineTotal = computed(() => {
+  if (isProviderMode.value) {
+    return (
+      providerState.baselineTotal.value ??
+      providerState.overallTotal.value ??
+      providerState.totalRecords.value
+    )
+  }
+
+  if (typeof props.totalRecords === 'number') {
+    return props.totalRecords
+  }
+
+  return props.rows.length
+})
+
+const selectionState = useGenericDataTableSelection({
+  visibleRows: resolvedRows,
+  query: currentQuery,
+  filteredTotal: computed(() => resolvedTotalRecords.value),
+  baselineTotal: computed(() => resolvedBaselineTotal.value),
+  rowKeyField: computed(() => props.rowKey),
+  enabled: selectionEnabled,
+  onChange: (payload) => emit('selection-change', payload)
 })
 
 const resolvedEmptyMessage = computed(() => {
@@ -367,8 +486,52 @@ const globalFilterValue = computed(() => {
 })
 
 const showToolbar = computed(
-  () => props.showGlobalFilter || props.showClearFilters
+  () =>
+    props.showGlobalFilter ||
+    props.showClearFilters ||
+    showSelectionToolbar.value
 )
+
+const showSelectionToolbar = computed(
+  () => selectionEnabled.value && props.showSelectionToolbar
+)
+
+const hasSelection = computed(() => {
+  if (selectionState.allFiltered.value) {
+    return true
+  }
+
+  return (selectionState.selectedCount.value ?? 0) > 0
+})
+
+const selectionSummary = computed(() => {
+  if (!selectionEnabled.value) {
+    return ''
+  }
+
+  if (selectionState.allFiltered.value) {
+    const selectedCount = selectionState.selectedCount.value
+    const excludedCount = selectionState.unselectedKeys.value.length
+
+    if (selectedCount === null) {
+      return excludedCount > 0
+        ? `All filtered rows selected (${excludedCount} excluded)`
+        : 'All filtered rows selected'
+    }
+
+    return excludedCount > 0
+      ? `${selectedCount} filtered rows selected (${excludedCount} excluded)`
+      : `${selectedCount} filtered rows selected`
+  }
+
+  const selectedCount = selectionState.selectedCount.value ?? 0
+
+  if (selectedCount === 0) {
+    return 'No rows selected'
+  }
+
+  return `${selectedCount} rows selected`
+})
 
 const resolvedSortField = computed(() => {
   const querySortField = normalizedQuery.value.sortField
@@ -611,9 +774,45 @@ const onClearFilters = (): void => {
   emit('update:query', clearFilters())
 }
 
+const onRowSelectionChange = (
+  row: GenericDataTableRow,
+  value: boolean | null | undefined
+): void => {
+  selectionState.setRowSelected(row, value === true)
+}
+
+const onToggleVisibleRows = (value: boolean | null | undefined): void => {
+  if (value === true) {
+    selectionState.selectAllPage(resolvedRows.value)
+    return
+  }
+
+  selectionState.clearVisibleRows(resolvedRows.value)
+}
+
+const onSelectAllPage = (): void => {
+  selectionState.selectAllPage(resolvedRows.value)
+}
+
+const onSelectAllFiltered = (): void => {
+  selectionState.selectAllFiltered(resolvedRows.value)
+}
+
+const onClearSelection = (): void => {
+  selectionState.clearSelection()
+}
+
 const onRowClick = (event: DataTableRowClickEvent): void => {
   emit('row-click', event.data as GenericDataTableRow)
 }
+
+defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
+  selectAllPage: (rows) => selectionState.selectAllPage(rows),
+  selectAllFiltered: (rows) => selectionState.selectAllFiltered(rows),
+  clearSelection: () => selectionState.clearSelection(),
+  refreshVisibleRows: (rows) => selectionState.refreshVisibleRows(rows),
+  getSelectionPayload: () => selectionState.getSelectionPayload()
+})
 </script>
 
 <style scoped>
@@ -633,6 +832,15 @@ const onRowClick = (event: DataTableRowClickEvent): void => {
 
 .generic-data-table__toolbar-main {
   flex: 1 1 280px;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.generic-data-table__toolbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
 .generic-data-table__global-filter,
@@ -640,8 +848,20 @@ const onRowClick = (event: DataTableRowClickEvent): void => {
   width: 100%;
 }
 
+.generic-data-table__selection-summary {
+  color: var(--app-text-muted);
+  font-size: 0.9rem;
+}
+
 .generic-data-table__filter-cell {
   min-width: 9rem;
+}
+
+.generic-data-table__selection-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .generic-data-table__actions {

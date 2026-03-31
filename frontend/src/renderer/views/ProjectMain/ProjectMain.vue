@@ -14,11 +14,11 @@
               {{ currentProjectDescription }}
             </p>
             <div class="project-main__demo-intro">
-              <span class="project-main__demo-badge">Sprint 4 Demo</span>
+              <span class="project-main__demo-badge">Sprint 5 Demo</span>
               <p class="app-copy app-copy--muted">
                 Tabla temporal para validar filtros `list`, `date`, `idIcon`,
-                `startsWith`, `endsWith` y `paramTransform` con `dataProvider`
-                asincrono.
+                `startsWith`, `endsWith`, `dataProvider` asincrono y seleccion
+                avanzada con contexto filtrado.
               </p>
             </div>
           </div>
@@ -27,22 +27,25 @@
 
       <PrimeCard class="app-panel project-main__panel">
         <template #title>
-          <span>CustomDataTableV1 Filter Demo</span>
+          <span>CustomDataTableV1 Selection Demo</span>
         </template>
         <template #subtitle>
-          Mock lazy loading with backend-style query output
+          Provider mode plus advanced selection payload validation
         </template>
         <template #content>
           <div class="app-stack app-stack--compact">
             <GenericDataTable
+              ref="demoTable"
               :columns="demoColumns"
               :rows="[]"
               :query="demoQuery"
               :data-provider="demoDataProvider"
+              selection-mode="multiple"
               empty-message="No demo audits match the current filters"
               global-filter-placeholder="Filter demo audits"
               @update:query="onDemoQueryChange"
               @row-click="onDemoRowClick"
+              @selection-change="onDemoSelectionChange"
             />
 
             <div class="project-main__query-panel">
@@ -51,10 +54,37 @@
                   >Emitted backend query</span
                 >
                 <span class="project-main__query-caption">
-                  Temporary inspection block for Sprint 4 validation
+                  Temporary inspection block for Sprint 5 validation
                 </span>
               </div>
               <pre class="project-main__query-code">{{ demoQueryPreview }}</pre>
+            </div>
+
+            <div class="project-main__query-panel">
+              <div
+                class="project-main__query-header project-main__query-header--split"
+              >
+                <div>
+                  <span class="project-main__query-title"
+                    >Selection payload</span
+                  >
+                  <span class="project-main__query-caption">
+                    Stable batch payload including query, selected keys and
+                    filtered context
+                  </span>
+                </div>
+                <PrimeButton
+                  type="button"
+                  icon="pi pi-refresh"
+                  text
+                  severity="secondary"
+                  label="Refresh selection API"
+                  @click="onRefreshSelectionApi"
+                />
+              </div>
+              <pre class="project-main__query-code">{{
+                demoSelectionPreview
+              }}</pre>
             </div>
           </div>
         </template>
@@ -76,9 +106,12 @@ import {
   GenericDataTable,
   type GenericDataTableColumn,
   type GenericDataTableDataProvider,
+  type GenericDataTableExpose,
   type GenericDataTableQuery,
   type GenericDataTableQueryChangeHandler,
-  type GenericDataTableRowClickHandler
+  type GenericDataTableRowClickHandler,
+  type GenericDataTableSelectionChangeHandler,
+  type GenericDataTableSelectionPayload
 } from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
 
 const router = useRouter()
@@ -86,6 +119,7 @@ const { t } = useI18n()
 const coreProjectStore = useCoreProjectStore()
 const preferencesStore = usePreferencesStore()
 const currentProject = ref<CoreProjectResponse | null>(null)
+const demoTable = ref<GenericDataTableExpose<DemoAuditRow> | null>(null)
 
 type DemoAuditRow = {
   id: number
@@ -109,6 +143,8 @@ const demoQuery = ref<GenericDataTableQuery>({
   globalFilter: null,
   filters: {}
 })
+const demoSelection =
+  ref<GenericDataTableSelectionPayload<DemoAuditRow> | null>(null)
 
 const categoryOptions = [
   { label: 'Safety', value: 1 },
@@ -317,6 +353,14 @@ const demoQueryPreview = computed(() =>
   JSON.stringify(demoQuery.value, null, 2)
 )
 
+const demoSelectionPreview = computed(() => {
+  if (!demoSelection.value) {
+    return 'No selection payload emitted yet.'
+  }
+
+  return JSON.stringify(demoSelection.value, null, 2)
+})
+
 const applyMatchMode = (
   candidate: unknown,
   filterValue: unknown,
@@ -439,6 +483,17 @@ const onDemoRowClick: GenericDataTableRowClickHandler<DemoAuditRow> = (row) => {
   console.info('Demo row clicked', row)
 }
 
+const onDemoSelectionChange: GenericDataTableSelectionChangeHandler<
+  DemoAuditRow
+> = (payload) => {
+  demoSelection.value = payload
+}
+
+const onRefreshSelectionApi = (): void => {
+  demoTable.value?.refreshVisibleRows()
+  demoSelection.value = demoTable.value?.getSelectionPayload() ?? null
+}
+
 const loadCurrentProject = async (): Promise<void> => {
   const selectedProjectId = preferencesStore.currentProjectId
 
@@ -514,6 +569,14 @@ onMounted((): void => {
 .project-main__query-header {
   display: grid;
   gap: 0.15rem;
+}
+
+.project-main__query-header--split {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+  flex-wrap: wrap;
 }
 
 .project-main__query-title {

@@ -10,6 +10,7 @@ La intencion de esta carpeta es que pueda copiarse a otro proyecto sin arrastrar
 
 - `GenericDataTable.vue`: componente visual principal.
 - `useGenericDataTableQuery.ts`: normalizacion de query y traduccion a filtros de PrimeVue.
+- `useGenericDataTableSelection.ts`: seleccion avanzada con `select all filtered`, overrides y payload estable.
 - `generic-data-table.types.ts`: tipos publicos del modulo.
 - `custom-data-table-v1.public.ts`: punto de entrada recomendado para importar el modulo.
 
@@ -18,7 +19,7 @@ La intencion de esta carpeta es que pueda copiarse a otro proyecto sin arrastrar
 Antes de copiar la carpeta, el proyecto destino necesita:
 
 - Vue 3 con `<script setup lang="ts">`.
-- PrimeVue con estos componentes disponibles: `DataTable`, `Column`, `Button`, `Dropdown`, `InputNumber`, `InputText`, `Tag`.
+- PrimeVue con estos componentes disponibles: `DataTable`, `Column`, `Button`, `Checkbox`, `Dropdown`, `InputNumber`, `InputText`, `Tag`.
 - Variables CSS equivalentes o compatibles con:
   - `--app-space-3`
   - `--app-space-4`
@@ -33,6 +34,7 @@ Importa siempre desde `custom-data-table-v1.public.ts` para que la carpeta tenga
 ```ts
 import {
   GenericDataTable,
+  useGenericDataTableSelection,
   useGenericDataTableQuery,
   type GenericDataTableColumn,
   type GenericDataTableQuery,
@@ -90,6 +92,25 @@ Compatibilidad asumida por implementacion actual:
 - `action`: emite `{ actionKey, row }` para columnas de acciones.
 - `load`: emite `{ query, rows, totalRecords, overallTotal, baselineTotal }` al resolver un `dataProvider`.
 - `provider-error`: emite `{ query, message, cause }` cuando falla un `dataProvider`.
+- `selection-change`: emite un payload estable para operaciones batch con `query`, `allFiltered`, `selectedKeys`, `unselectedKeys`, `selectedCount` y `selectedRows` visibles/materializados.
+
+### Props de seleccion
+
+- `selectionMode`: `none` o `multiple`.
+- `showSelectionToolbar`: muestra acciones de seleccionar pagina, seleccionar filtrado y limpiar seleccion.
+- `selectPageLabel`, `selectFilteredLabel`, `clearSelectionLabel`: textos de los controles de seleccion.
+
+### API de seleccion
+
+Sprint 5 anade dos superficies complementarias:
+
+- Composable publico `useGenericDataTableSelection` para gestionar seleccion avanzada fuera del componente si el consumidor lo necesita.
+- API expuesta por `GenericDataTable` via `ref` con `selectAllPage()`, `selectAllFiltered()`, `clearSelection()`, `refreshVisibleRows()` y `getSelectionPayload()`.
+
+El payload de seleccion queda pensado para backend batch operations:
+
+- `allFiltered=false`: usar `selectedKeys`.
+- `allFiltered=true`: usar `query` + `unselectedKeys` como exclusiones.
 
 ## Patron de uso recomendado
 
@@ -282,6 +303,63 @@ onMounted(() => {
 ```
 
 ### Ejemplo minimo de provider mode
+
+### Ejemplo minimo de seleccion avanzada
+
+Este caso usa provider mode y escucha `selection-change` para enviar operaciones batch sin perder el contexto filtrado.
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import {
+  GenericDataTable,
+  type GenericDataTableExpose,
+  type GenericDataTableQuery,
+  type GenericDataTableSelectionChangeHandler,
+  type GenericDataTableSelectionPayload
+} from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
+
+type AuditRow = {
+  id: number
+  code: string
+}
+
+const tableRef = ref<GenericDataTableExpose<AuditRow> | null>(null)
+const query = ref<GenericDataTableQuery>({
+  page: 0,
+  size: 10,
+  sortField: 'code',
+  sortOrder: 1,
+  globalFilter: null,
+  filters: {}
+})
+
+const selection = ref<GenericDataTableSelectionPayload<AuditRow> | null>(null)
+
+const onSelectionChange: GenericDataTableSelectionChangeHandler<AuditRow> = (
+  payload
+) => {
+  selection.value = payload
+}
+
+function refreshSelectionSnapshot() {
+  tableRef.value?.refreshVisibleRows()
+  selection.value = tableRef.value?.getSelectionPayload() ?? null
+}
+</script>
+
+<template>
+  <GenericDataTable
+    ref="tableRef"
+    :columns="columns"
+    :rows="[]"
+    :query="query"
+    :data-provider="dataProvider"
+    selection-mode="multiple"
+    @selection-change="onSelectionChange"
+  />
+</template>
+```
 
 Este caso elimina la logica manual de carga en la vista. La tabla recarga automaticamente cuando cambia `query` y conserva el mismo contrato de filtros y orden.
 
