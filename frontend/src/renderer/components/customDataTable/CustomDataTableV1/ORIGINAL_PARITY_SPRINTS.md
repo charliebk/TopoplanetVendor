@@ -41,6 +41,8 @@ Resultado aplicado en el modulo:
 
 Objetivo: cubrir la riqueza del `ColumnDef` original sin heredar su complejidad completa.
 
+Estado actual: completado.
+
 Entregables:
 
 - Soporte para tipos adicionales: `integer`, `date`, `percent`, `idIcon`, `list`.
@@ -51,6 +53,13 @@ Entregables:
 Criterio de cierre:
 
 - La mayoria de columnas del componente original puede declararse sin adaptadores externos.
+
+Resultado aplicado en el modulo:
+
+- V1 soporta `integer`, `date`, `percent`, `idIcon` y `list`.
+- V1 soporta `displayField`, `backendField`, `minWidth`, `maxWidth`.
+- V1 soporta `tooltipField` e `idIconClass`.
+- La compatibilidad entre `type`, `filterType`, renderizado y query esta documentada en el README y aplicada en el componente.
 
 ## Sprint 3. Paridad del sistema de filtros
 

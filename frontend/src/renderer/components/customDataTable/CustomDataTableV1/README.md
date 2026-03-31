@@ -62,6 +62,7 @@ Compatibilidad esperada para esta V1:
 - PrimeVue Button para acciones por fila y boton de limpiar filtros.
 - PrimeVue InputText para filtro global y filtros de texto.
 - PrimeVue InputNumber para filtros numericos.
+- PrimeVue Calendar para filtros de fecha.
 - PrimeVue Dropdown para filtros booleanos y select.
 - PrimeVue Tag para render booleano basico.
 
@@ -282,6 +283,55 @@ onMounted(() => {
 - Usa `filterType` cuando el filtro no coincide con `type`.
 - Usa `format` para presentacion, no para transformar el dato base.
 - Usa `align: 'right'` para importes, factores y porcentajes.
+
+## Estrategia de compatibilidad de Sprint 2
+
+La compatibilidad entre `type`, `filterType` y renderizado queda definida asi:
+
+- `type` controla el render por defecto de la celda.
+- `filterType` controla el editor de filtro; si no existe, la tabla reutiliza `type`.
+- `displayField` permite mostrar un campo distinto de `field` sin cambiar la identidad de la columna.
+- `backendField` permite que la query emitida use otra clave distinta de `field` para filtros y orden.
+
+Resolucion actual por defecto:
+
+- `text` renderiza texto y usa `InputText`.
+- `number` renderiza numerico con decimales y usa `InputNumber`.
+- `integer` renderiza numerico entero y usa `InputNumber` sin decimales.
+- `percent` renderiza numerico con sufijo `%` y filtra como numerico.
+- `date` renderiza fecha local y usa `Calendar`.
+- `boolean` renderiza `Tag` y usa `Dropdown` booleano.
+- `select` y `list` usan `Dropdown` con `filterOptions`.
+- `idIcon` renderiza icono y texto opcional usando `idIconClass`, `displayField` y `tooltipField`.
+- `actions` renderiza botones de accion y no tiene filtro por defecto.
+
+Ejemplo de columna con metadatos nuevos:
+
+```ts
+{
+  field: 'categoryId',
+  header: 'Category',
+  type: 'list',
+  filterable: true,
+  displayField: 'categoryName',
+  backendField: 'categoryId',
+  filterOptions: [
+    { label: 'Safety', value: 1 },
+    { label: 'Quality', value: 2 }
+  ]
+}
+```
+
+```ts
+{
+  field: 'originId',
+  header: 'Origin',
+  type: 'idIcon',
+  displayField: 'originName',
+  tooltipField: 'originDescription',
+  idIconClass: (row) => row.originActive ? 'pi pi-check-circle' : 'pi pi-ban'
+}
+```
 
 ## Portabilidad
 

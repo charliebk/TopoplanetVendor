@@ -5,17 +5,29 @@ export type GenericDataTableRow = Record<string, unknown>
 export type GenericDataTableColumnType =
   | 'text'
   | 'number'
+  | 'integer'
+  | 'date'
   | 'boolean'
+  | 'list'
   | 'select'
+  | 'percent'
+  | 'idIcon'
   | 'actions'
 
 export type GenericDataTableFilterType =
   | 'text'
   | 'number'
+  | 'date'
   | 'boolean'
+  | 'list'
   | 'select'
 
-export type GenericDataTableFilterValue = string | number | boolean | null
+export type GenericDataTableFilterValue =
+  | string
+  | number
+  | boolean
+  | Date
+  | null
 
 export interface GenericDataTableOption {
   label: string
@@ -26,6 +38,8 @@ export interface GenericDataTableAction<Row extends GenericDataTableRow> {
   key: string
   icon: string
   label?: string
+  tooltip?: string
+  class?: string
   disabled?: boolean | ((row: Row) => boolean)
   severity?:
     | 'secondary'
@@ -46,7 +60,14 @@ export interface GenericDataTableColumn<Row extends GenericDataTableRow> {
   filterType?: GenericDataTableFilterType
   filterOptions?: GenericDataTableOption[]
   width?: string
+  minWidth?: string
+  maxWidth?: string
   align?: 'left' | 'center' | 'right'
+  displayField?: keyof Row & string
+  backendField?: string
+  tooltipField?: keyof Row & string
+  idIconClass?: string | ((row: Row) => string)
+  decimals?: number
   format?: (value: unknown, row: Row) => string
   actions?: Array<GenericDataTableAction<Row>>
 }

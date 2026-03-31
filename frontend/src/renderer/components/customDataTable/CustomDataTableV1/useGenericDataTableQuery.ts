@@ -2,17 +2,15 @@ import { computed, ref, watch } from 'vue'
 import type {
   GenericDataTableColumn,
   GenericDataTableFilterValue,
+  GenericDataTablePrimeFilters,
   GenericDataTableQueryController,
   GenericDataTableQuery,
   GenericDataTableRow
 } from './generic-data-table.types'
 
-type PrimeFilterMetaValue = {
-  value: GenericDataTableFilterValue
-  matchMode: 'contains' | 'equals'
-}
-
-type PrimeFilters = Record<string, PrimeFilterMetaValue>
+const resolveBackendField = <Row extends GenericDataTableRow>(
+  column: GenericDataTableColumn<Row>
+): string => column.backendField ?? column.field
 
 const resolveMatchMode = <Row extends GenericDataTableRow>(
   column: GenericDataTableColumn<Row>
@@ -24,8 +22,8 @@ const resolveMatchMode = <Row extends GenericDataTableRow>(
 const buildPrimeFilters = <Row extends GenericDataTableRow>(
   columns: Array<GenericDataTableColumn<Row>>,
   query: GenericDataTableQuery
-): PrimeFilters => {
-  const next: PrimeFilters = {
+): GenericDataTablePrimeFilters => {
+  const next: GenericDataTablePrimeFilters = {
     global: {
       value: query.globalFilter ?? null,
       matchMode: 'contains'
@@ -38,7 +36,7 @@ const buildPrimeFilters = <Row extends GenericDataTableRow>(
     }
 
     next[column.field] = {
-      value: query.filters?.[column.field] ?? null,
+      value: query.filters?.[resolveBackendField(column)] ?? null,
       matchMode: resolveMatchMode(column)
     }
   }
@@ -46,8 +44,9 @@ const buildPrimeFilters = <Row extends GenericDataTableRow>(
   return next
 }
 
-const buildFilterRecord = (
-  filters: PrimeFilters
+const buildFilterRecord = <Row extends GenericDataTableRow>(
+  columns: Array<GenericDataTableColumn<Row>>,
+  filters: GenericDataTablePrimeFilters
 ): Record<string, GenericDataTableFilterValue> => {
   const next: Record<string, GenericDataTableFilterValue> = {}
 
@@ -60,7 +59,10 @@ const buildFilterRecord = (
       continue
     }
 
-    next[field] = filterMeta.value
+    const column = columns.find((candidate) => candidate.field === field)
+    const queryField = column ? resolveBackendField(column) : field
+
+    next[queryField] = filterMeta.value
   }
 
   return next
@@ -80,7 +82,7 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
     filters: { ...(query?.filters ?? {}) }
   })
 
-  const primeFilters = ref<PrimeFilters>(
+  const primeFilters = ref<GenericDataTablePrimeFilters>(
     buildPrimeFilters(columns, normalizedQuery.value)
   )
 
@@ -109,8 +111,11 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
     size: normalizedQuery.value.size,
     sortField: normalizedQuery.value.sortField ?? null,
     sortOrder: normalizedQuery.value.sortOrder ?? 1,
-    globalFilter: primeFilters.value.global?.value?.toString() || null,
-    filters: buildFilterRecord(primeFilters.value)
+    globalFilter:
+      typeof primeFilters.value.global?.value === 'string'
+        ? primeFilters.value.global.value
+        : null,
+    filters: buildFilterRecord(columns, primeFilters.value)
   }))
 
   const setPage = (page: number, size: number): GenericDataTableQuery => {
@@ -127,10 +132,12 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
     sortField: string | null,
     sortOrder: 1 | -1
   ): GenericDataTableQuery => {
+    const column = columns.find((candidate) => candidate.field === sortField)
+
     normalizedQuery.value = {
       ...normalizedQuery.value,
       page: 0,
-      sortField,
+      sortField: column ? resolveBackendField(column) : sortField,
       sortOrder
     }
 

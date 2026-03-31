@@ -33,6 +33,8 @@
       :rows="normalizedQuery.size"
       :total-records="resolvedTotalRecords"
       :first="first"
+      :sort-field="resolvedSortField"
+      :sort-order="normalizedQuery.sortOrder"
       :row-hover="rowHover"
       :striped-rows="stripedRows"
       :filter-display="filterDisplay"
@@ -54,8 +56,22 @@
           :sortable="column.sortable === true"
           :filter="column.filterable === true"
           :style="column.width ? { width: column.width } : undefined"
-          :header-style="resolveAlignmentStyle(column.align, column.width)"
-          :body-style="resolveAlignmentStyle(column.align, column.width)"
+          :header-style="
+            resolveAlignmentStyle(
+              column.align,
+              column.width,
+              column.minWidth,
+              column.maxWidth
+            )
+          "
+          :body-style="
+            resolveAlignmentStyle(
+              column.align,
+              column.width,
+              column.minWidth,
+              column.maxWidth
+            )
+          "
         >
           <template #body="slotProps">
             <slot
@@ -65,7 +81,21 @@
               :column="column"
             >
               <div
-                v-if="column.type === 'actions'"
+                v-if="column.type === 'idIcon'"
+                class="generic-data-table__id-icon-cell"
+                :title="resolveTooltipValue(column, slotProps.data)"
+              >
+                <i
+                  :class="resolveIdIconClass(column, slotProps.data)"
+                  aria-hidden="true"
+                />
+                <span v-if="resolveDisplayValue(column, slotProps.data)">
+                  {{ resolveDisplayValue(column, slotProps.data) }}
+                </span>
+              </div>
+
+              <div
+                v-else-if="column.type === 'actions'"
                 class="generic-data-table__actions"
                 @click.stop
               >
@@ -78,6 +108,9 @@
                   :severity="action.severity ?? 'secondary'"
                   text
                   size="small"
+                  :class="action.class"
+                  :title="action.tooltip"
+                  :aria-label="action.tooltip ?? action.label ?? action.key"
                   :disabled="resolveActionDisabled(action, slotProps.data)"
                   @click.stop="
                     emit('action', {
@@ -112,7 +145,10 @@
           >
             <div class="generic-data-table__filter-cell">
               <PrimeDropdown
-                v-if="resolveFilterType(column) === 'select'"
+                v-if="
+                  resolveFilterType(column) === 'select' ||
+                  resolveFilterType(column) === 'list'
+                "
                 :model-value="primeFilters[column.field]?.value ?? null"
                 :options="column.filterOptions ?? []"
                 option-label="label"
@@ -140,8 +176,22 @@
               />
 
               <PrimeInputNumber
-                v-else-if="resolveFilterType(column) === 'number'"
+                v-else-if="isNumericFilterType(column)"
                 :model-value="resolveNumericFilterValue(column.field)"
+                :min-fraction-digits="resolveMinFractionDigits(column)"
+                :max-fraction-digits="resolveMaxFractionDigits(column)"
+                input-class="generic-data-table__filter-input"
+                :placeholder="column.header"
+                @update:model-value="
+                  (value) => onColumnFilterChange(column.field, value ?? null)
+                "
+              />
+
+              <PrimeCalendar
+                v-else-if="resolveFilterType(column) === 'date'"
+                :model-value="resolveDateFilterValue(column.field)"
+                show-icon
+                date-format="yy-mm-dd"
                 input-class="generic-data-table__filter-input"
                 :placeholder="column.header"
                 @update:model-value="
@@ -187,6 +237,7 @@ import DataTable, {
 } from 'primevue/datatable'
 import Column from 'primevue/column'
 import PrimeButton from 'primevue/button'
+import PrimeCalendar from 'primevue/calendar'
 import PrimeDropdown from 'primevue/dropdown'
 import PrimeInputNumber from 'primevue/inputnumber'
 import PrimeInputText from 'primevue/inputtext'
@@ -196,33 +247,14 @@ import type {
   GenericDataTableActionPayload,
   GenericDataTableColumn,
   GenericDataTableFilterValue,
+  GenericDataTableProps,
   GenericDataTableQuery,
   GenericDataTableRow
 } from './generic-data-table.types'
 import { useGenericDataTableQuery } from './useGenericDataTableQuery'
 
 const props = withDefaults(
-  defineProps<{
-    columns: Array<GenericDataTableColumn<GenericDataTableRow>>
-    rows: GenericDataTableRow[]
-    query?: GenericDataTableQuery
-    loading?: boolean
-    lazy?: boolean
-    rowKey?: string
-    totalRecords?: number
-    rowsPerPageOptions?: number[]
-    filterDisplay?: 'row' | 'menu'
-    showGridlines?: boolean
-    stripedRows?: boolean
-    rowHover?: boolean
-    emptyMessage?: string
-    loadingMessage?: string
-    globalFilterPlaceholder?: string
-    clearFiltersLabel?: string
-    showGlobalFilter?: boolean
-    showClearFilters?: boolean
-    showPaginator?: boolean
-  }>(),
+  defineProps<GenericDataTableProps<GenericDataTableRow>>(),
   {
     query: () => ({
       page: 0,
@@ -296,26 +328,108 @@ const showToolbar = computed(
   () => props.showGlobalFilter || props.showClearFilters
 )
 
+const resolvedSortField = computed(() => {
+  const querySortField = normalizedQuery.value.sortField
+
+  if (!querySortField) {
+    return null
+  }
+
+  const column = props.columns.find(
+    (candidate) =>
+      candidate.backendField === querySortField ||
+      candidate.field === querySortField
+  )
+
+  return column?.field ?? querySortField
+})
+
 const resolveFilterType = (
   column: GenericDataTableColumn<GenericDataTableRow>
-): 'text' | 'number' | 'boolean' | 'select' => {
-  return (column.filterType ?? column.type ?? 'text') as
+): 'text' | 'number' | 'date' | 'boolean' | 'list' | 'select' => {
+  const resolvedType = column.filterType ?? column.type ?? 'text'
+
+  if (resolvedType === 'integer' || resolvedType === 'percent') {
+    return 'number'
+  }
+
+  if (resolvedType === 'actions' || resolvedType === 'idIcon') {
+    return 'text'
+  }
+
+  return resolvedType as
     | 'text'
     | 'number'
+    | 'date'
     | 'boolean'
+    | 'list'
     | 'select'
 }
 
+const isNumericFilterType = (
+  column: GenericDataTableColumn<GenericDataTableRow>
+): boolean => resolveFilterType(column) === 'number'
+
 const resolveAlignmentStyle = (
   align: GenericDataTableColumn<GenericDataTableRow>['align'],
-  width?: string
+  width?: string,
+  minWidth?: string,
+  maxWidth?: string
 ): Record<string, string> => ({
   textAlign: align ?? 'left',
-  ...(width ? { width } : {})
+  ...(width ? { width } : {}),
+  ...(minWidth ? { minWidth } : {}),
+  ...(maxWidth ? { maxWidth } : {})
 })
 
 const readValue = (row: GenericDataTableRow, field: string): unknown =>
   row[field]
+
+const readColumnValue = (
+  row: GenericDataTableRow,
+  column: GenericDataTableColumn<GenericDataTableRow>
+): unknown => {
+  const sourceField = column.displayField ?? column.field
+  return row[sourceField]
+}
+
+const resolveDisplayValue = (
+  column: GenericDataTableColumn<GenericDataTableRow>,
+  row: GenericDataTableRow
+): string => {
+  const value = readColumnValue(row, column)
+
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  return String(value)
+}
+
+const resolveTooltipValue = (
+  column: GenericDataTableColumn<GenericDataTableRow>,
+  row: GenericDataTableRow
+): string => {
+  if (column.tooltipField) {
+    const tooltipValue = row[column.tooltipField]
+    return tooltipValue === null || tooltipValue === undefined
+      ? ''
+      : String(tooltipValue)
+  }
+
+  return resolveDisplayValue(column, row)
+}
+
+const resolveIdIconClass = (
+  column: GenericDataTableColumn<GenericDataTableRow>,
+  row: GenericDataTableRow
+): string => {
+  if (typeof column.idIconClass === 'function') {
+    return column.idIconClass(row)
+  }
+
+  return column.idIconClass ?? 'pi pi-circle'
+}
 
 const formatBooleanValue = (value: unknown): string => {
   if (value === true) {
@@ -333,7 +447,7 @@ const formatCellValue = (
   column: GenericDataTableColumn<GenericDataTableRow>,
   row: GenericDataTableRow
 ): string => {
-  const value = readValue(row, column.field)
+  const value = readColumnValue(row, column)
 
   if (column.format) {
     return column.format(value, row)
@@ -343,8 +457,33 @@ const formatCellValue = (
     return ''
   }
 
-  if (column.type === 'number') {
-    return Number(value).toString()
+  if (column.type === 'number' || column.type === 'integer') {
+    const fractionDigits =
+      column.type === 'integer' ? 0 : (column.decimals ?? 2)
+
+    return Number(value).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: fractionDigits
+    })
+  }
+
+  if (column.type === 'percent') {
+    const decimals = column.decimals ?? 2
+
+    return `${Number(value).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: decimals
+    })}%`
+  }
+
+  if (column.type === 'date') {
+    const dateValue = value instanceof Date ? value : new Date(String(value))
+
+    if (Number.isNaN(dateValue.getTime())) {
+      return String(value)
+    }
+
+    return dateValue.toLocaleDateString()
   }
 
   return String(value)
@@ -363,6 +502,35 @@ const resolveNumericFilterValue = (field: string): number | null => {
   }
 
   return null
+}
+
+const resolveDateFilterValue = (field: string): Date | null => {
+  const value = primeFilters.value[field]?.value
+
+  if (value instanceof Date) {
+    return value
+  }
+
+  if (typeof value === 'string' && value) {
+    const parsedDate = new Date(value)
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate
+  }
+
+  return null
+}
+
+const resolveMinFractionDigits = (
+  column: GenericDataTableColumn<GenericDataTableRow>
+): number => (column.type === 'integer' ? 0 : 0)
+
+const resolveMaxFractionDigits = (
+  column: GenericDataTableColumn<GenericDataTableRow>
+): number => {
+  if (column.type === 'integer') {
+    return 0
+  }
+
+  return column.decimals ?? 2
 }
 
 const resolveActionDisabled = (
@@ -438,6 +606,16 @@ const onRowClick = (event: DataTableRowClickEvent): void => {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.generic-data-table__id-icon-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.generic-data-table__id-icon-cell i {
+  font-size: 0.95rem;
 }
 
 .generic-data-table__state-message {
