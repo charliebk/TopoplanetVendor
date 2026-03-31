@@ -13,4 +13,5 @@ export type UiThemeMode = (typeof SUPPORTED_THEME_MODES)[number]
 export interface PersistedUiPreferences {
   locale: UiLocale
   themeMode: UiThemeMode
+  currentProjectId: number | null
 }

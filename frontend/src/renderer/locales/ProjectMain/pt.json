@@ -1,0 +1,6 @@
+{
+  "placeholder": "Tela base do projeto atual. O dashboard real sera conectado aqui no proximo passo.",
+  "fallbackTitle": "Projeto atual",
+  "fallbackCode": "Sem codigo",
+  "fallbackDescription": "Nao ha informacoes disponiveis para o projeto selecionado."
+}

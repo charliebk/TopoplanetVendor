@@ -46,8 +46,12 @@ Servicio por defecto:
 ## Base de datos
 
 - Ruta SQLite por defecto: `../db/app.sqlite`
+- Scripts SQL vigentes: `../db/sql/schema.sql` y `../db/sql/test-data.sql`
 - Override por entorno: `APP_DB_PATH`
 - Validacion/actualizacion de esquema: `DatabaseSchemaManager.ensureSchema(...)`
+- Restore manual en desarrollo:
+  - `DB - Restore Schema`
+  - `DB - Restore Schema&Data`
 
 ### Esquema que se garantiza al arrancar
 

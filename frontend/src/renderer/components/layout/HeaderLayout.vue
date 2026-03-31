@@ -20,13 +20,16 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { mdiHome } from '@mdi/js'
 
 const router = useRouter()
 const route: any = useRoute()
-const titleKey: string = (route?.meta?.titleKey || 'title.main') as string
+const titleKey = computed(() => {
+  return (route?.meta?.titleKey || 'title.main') as string
+})
 
 const { t } = useI18n()
 
@@ -38,11 +41,14 @@ const isCurrentRoute = (path: string): boolean => {
   return path === route.path
 }
 
-const resolveLabel = (text: string): string => {
-  if (text.includes('.')) {
-    return t(text)
+const resolveLabel = (text: string | { value: string }): string => {
+  const rawText = typeof text === 'string' ? text : text.value
+
+  if (rawText.includes('.')) {
+    return t(rawText)
   }
-  return text
+
+  return rawText
 }
 
 const headerMenus: {

@@ -15,8 +15,6 @@
     "startSubtitle": "Main actions and projects available in the database.",
     "projectsTitle": "Projects",
     "projectsCount": "{count} active",
-    "recentTitle": "Recent",
-    "recentSubtitle": "Projects opened or updated most recently.",
     "tutorialsTitle": "Walkthroughs",
     "tutorialsSubtitle": "Short guides that explain how the application works and how the workflow is navigated."
   },
@@ -30,13 +28,10 @@
   },
   "projects": {
     "active": "Active",
-    "draft": "Draft",
-    "review": "In review"
-  },
-  "recent": {
-    "schemaRegenerated": "Project schema regenerated",
-    "kickoffChecklist": "Kickoff checklist prepared",
-    "vendorsPending": "Pending vendor import"
+    "loading": "Loading projects...",
+    "loadError": "Could not load the project list.",
+    "empty": "No projects are available in the database.",
+    "noDescription": "No description"
   },
   "tutorials": {
     "gettingStartedTitle": "Create your first project",

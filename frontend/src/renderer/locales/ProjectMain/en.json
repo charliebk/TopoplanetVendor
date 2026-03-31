@@ -1,0 +1,6 @@
+{
+  "placeholder": "Base screen for the current project. The real dashboard will be wired here next.",
+  "fallbackTitle": "Current project",
+  "fallbackCode": "No code",
+  "fallbackDescription": "There is no information available for the selected project."
+}

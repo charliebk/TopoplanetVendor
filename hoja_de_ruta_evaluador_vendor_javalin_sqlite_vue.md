@@ -531,7 +531,7 @@ Todas las tablas base del apartado 5.
 - Definir unicidad funcional de respuestas por vendor + product + question.
 - Definir semántica de estados de respuesta (ANSWERED, NO_RESPONSE, NOT_APPLICABLE).
 - Validar que el modelo se mantiene genérico y no orientado solo a software.
-- Crear `db/schema/V001__initial_schema.sql`
+- Crear `db/sql/schema.sql`
 - Crear estructura backend por tabla con capas `Controller/DTO/Repository/Query/Services`.
 - Eliminar módulos legacy no usados (`manager/appmessage`, `manager/health`, etc.).
 - Mantener únicamente `io/project` como área temporal a revisar después.
@@ -577,7 +577,7 @@ Tareas:
 5. Incluye índice único para (project_id, vendor_id, product_id, question_id) en response.
 6. Prepara el SQL para migración inicial.
 7. No uses cosas específicas de PostgreSQL.
-8. Devuélveme un archivo V001__initial_schema.sql completo.
+8. Devuélveme un archivo schema.sql completo.
 9. Incluye soporte para estado de respuesta y casos no respondidos/no aplicables.
 ```
 

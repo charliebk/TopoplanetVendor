@@ -6,13 +6,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 public final class DatabaseSchemaManager {
-    private static final String V001_FILENAME = "V001__initial_schema.sql";
+    private static final String SCHEMA_FILENAME = "schema.sql";
+    private static final String TEST_DATA_FILENAME = "test-data.sql";
 
     private DatabaseSchemaManager() {
     }
@@ -21,8 +24,22 @@ public final class DatabaseSchemaManager {
         applyV001Schema(dataSource, dbPath);
     }
 
+    public static void recreateSchema(DataSource dataSource, Path dbPath) {
+        dropAllObjects(dataSource);
+        applyScript(dataSource, resolveSqlPath(dbPath, SCHEMA_FILENAME));
+    }
+
+    public static void recreateSchemaAndData(DataSource dataSource, Path dbPath) {
+        dropAllObjects(dataSource);
+        applyScript(dataSource, resolveSqlPath(dbPath, SCHEMA_FILENAME));
+        applyScript(dataSource, resolveSqlPath(dbPath, TEST_DATA_FILENAME));
+    }
+
     private static void applyV001Schema(DataSource dataSource, Path dbPath) {
-        Path scriptPath = resolveV001Path(dbPath);
+        applyScript(dataSource, resolveSqlPath(dbPath, SCHEMA_FILENAME));
+    }
+
+    private static void applyScript(DataSource dataSource, Path scriptPath) {
         String script;
 
         try {
@@ -42,15 +59,59 @@ public final class DatabaseSchemaManager {
         }
     }
 
-    private static Path resolveV001Path(Path dbPath) {
+    private static void dropAllObjects(DataSource dataSource) {
+        List<SchemaObject> schemaObjects = readSchemaObjects(dataSource);
+
+        try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
+            statement.execute("PRAGMA foreign_keys = OFF");
+
+            for (SchemaObject schemaObject : schemaObjects) {
+                statement.execute("DROP " + schemaObject.typeKeyword() + " IF EXISTS \"" + schemaObject.name() + "\"");
+            }
+
+            statement.execute("DELETE FROM sqlite_sequence");
+            statement.execute("PRAGMA foreign_keys = ON");
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to drop existing schema objects", e);
+        }
+    }
+
+    private static List<SchemaObject> readSchemaObjects(DataSource dataSource) {
+        String sql = """
+            SELECT type, name
+            FROM sqlite_master
+            WHERE name NOT LIKE 'sqlite_%'
+              AND type IN ('table', 'view', 'trigger')
+            """;
+
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+            List<SchemaObject> schemaObjects = new ArrayList<>();
+
+            while (resultSet.next()) {
+                schemaObjects.add(new SchemaObject(
+                    resultSet.getString("type"),
+                    resultSet.getString("name")
+                ));
+            }
+
+            schemaObjects.sort(Comparator.comparingInt(SchemaObject::dropOrder).reversed());
+            return schemaObjects;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to inspect existing schema objects", e);
+        }
+    }
+
+    private static Path resolveSqlPath(Path dbPath, String filename) {
         Path dbDir = dbPath.toAbsolutePath().normalize().getParent();
         if (dbDir == null) {
             throw new IllegalStateException("Could not resolve DB directory from path: " + dbPath);
         }
 
-        Path scriptPath = dbDir.resolve("schema").resolve(V001_FILENAME).normalize();
+        Path scriptPath = dbDir.resolve("sql").resolve(filename).normalize();
         if (!Files.exists(scriptPath)) {
-            throw new IllegalStateException("Schema script not found: " + scriptPath);
+            throw new IllegalStateException("SQL script not found: " + scriptPath);
         }
         return scriptPath;
     }
@@ -107,5 +168,25 @@ public final class DatabaseSchemaManager {
         }
 
         return statements;
+    }
+
+    private record SchemaObject(String type, String name) {
+        private String typeKeyword() {
+            return switch (type) {
+                case "table" -> "TABLE";
+                case "view" -> "VIEW";
+                case "trigger" -> "TRIGGER";
+                default -> throw new IllegalStateException("Unsupported schema object type: " + type);
+            };
+        }
+
+        private int dropOrder() {
+            return switch (type) {
+                case "trigger" -> 3;
+                case "view" -> 2;
+                case "table" -> 1;
+                default -> 0;
+            };
+        }
     }
 }

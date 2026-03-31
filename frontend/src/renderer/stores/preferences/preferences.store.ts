@@ -39,7 +39,11 @@ const readPersistedPreferences = (): PersistedUiPreferences | null => {
     ) {
       return {
         locale: parsedPreferences.locale,
-        themeMode: parsedPreferences.themeMode
+        themeMode: parsedPreferences.themeMode,
+        currentProjectId:
+          typeof parsedPreferences.currentProjectId === 'number'
+            ? parsedPreferences.currentProjectId
+            : null
       }
     }
   } catch {
@@ -53,6 +57,9 @@ export const usePreferencesStore = defineStore('renderer-preferences', () => {
   const persistedPreferences = readPersistedPreferences()
   const locale = ref<UiLocale>(persistedPreferences?.locale ?? resolveLocale())
   const themeMode = ref<UiThemeMode>(persistedPreferences?.themeMode ?? 'light')
+  const currentProjectId = ref<number | null>(
+    persistedPreferences?.currentProjectId ?? null
+  )
 
   const persistPreferences = (): void => {
     if (typeof window === 'undefined') {
@@ -63,7 +70,8 @@ export const usePreferencesStore = defineStore('renderer-preferences', () => {
       STORAGE_KEY,
       JSON.stringify({
         locale: locale.value,
-        themeMode: themeMode.value
+        themeMode: themeMode.value,
+        currentProjectId: currentProjectId.value
       })
     )
   }
@@ -90,10 +98,21 @@ export const usePreferencesStore = defineStore('renderer-preferences', () => {
     persistPreferences()
   }
 
+  const setCurrentProjectId = (nextProjectId: number | null): void => {
+    if (currentProjectId.value === nextProjectId) {
+      return
+    }
+
+    currentProjectId.value = nextProjectId
+    persistPreferences()
+  }
+
   return {
     locale,
     themeMode,
+    currentProjectId,
     setLocale,
-    setThemeMode
+    setThemeMode,
+    setCurrentProjectId
   }
 })

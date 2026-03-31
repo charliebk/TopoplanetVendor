@@ -7,6 +7,7 @@
   },
   "title": {
     "main": "Tela principal",
+    "projectMain": "Projeto Atual",
     "second": "Segunda tela",
     "error": "Erro desconhecido"
   },

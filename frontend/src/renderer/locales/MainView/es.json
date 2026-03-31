@@ -15,8 +15,6 @@
     "startSubtitle": "Accesos principales y proyectos disponibles en la base de datos.",
     "projectsTitle": "Proyectos",
     "projectsCount": "{count} activos",
-    "recentTitle": "Recientes",
-    "recentSubtitle": "Proyectos abiertos o actualizados recientemente.",
     "tutorialsTitle": "Tutorial",
     "tutorialsSubtitle": "Guias cortas para explicar como funciona la aplicacion y como se recorre el flujo de trabajo."
   },
@@ -30,13 +28,10 @@
   },
   "projects": {
     "active": "Activo",
-    "draft": "Borrador",
-    "review": "En revision"
-  },
-  "recent": {
-    "schemaRegenerated": "Schema project regenerado",
-    "kickoffChecklist": "Checklist de kickoff preparado",
-    "vendorsPending": "Pendiente de importar vendors"
+    "loading": "Cargando proyectos...",
+    "loadError": "No se pudo cargar la lista de proyectos.",
+    "empty": "No hay proyectos disponibles en la base de datos.",
+    "noDescription": "Sin descripcion"
   },
   "tutorials": {
     "gettingStartedTitle": "Crear tu primer proyecto",

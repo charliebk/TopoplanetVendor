@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Dev - Start Development",
+      "label": "App - Start Project",
       "type": "shell",
       "command": "cmd.exe",
       "args": ["/c", "npm", "--prefix", "frontend", "run", "dev"],
@@ -28,6 +28,45 @@
         "kind": "build",
         "isDefault": true
       }
+    },
+    {
+      "label": "DB - Restore Schema",
+      "type": "shell",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\.vscode\\restore-db-schema.ps1"
+      ],
+      "isBackground": false,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": "build"
+    },
+    {
+      "label": "DB - Restore Schema&Data",
+      "type": "shell",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\.vscode\\restore-db-schema.ps1",
+        "-IncludeTestData"
+      ],
+      "isBackground": false,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": "build"
     }
   ]
 }

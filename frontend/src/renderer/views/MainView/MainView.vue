@@ -88,11 +88,30 @@
               </div>
 
               <div class="project-panel__list app-list">
+                <div
+                  v-if="isLoadingProjects"
+                  class="project-panel__feedback app-copy app-copy--muted"
+                >
+                  {{ t('MainView.projects.loading') }}
+                </div>
+                <div
+                  v-else-if="projectsLoadError"
+                  class="project-panel__feedback app-copy app-copy--muted"
+                >
+                  {{ t('MainView.projects.loadError') }}
+                </div>
+                <div
+                  v-else-if="projects.length === 0"
+                  class="project-panel__feedback app-copy app-copy--muted"
+                >
+                  {{ t('MainView.projects.empty') }}
+                </div>
                 <button
                   v-for="project in projects"
                   :key="project.id"
                   type="button"
                   class="project-list-item app-list-item"
+                  @click="openProject(project.id)"
                 >
                   <span>
                     <span class="project-list-item__title app-list-item__title">
@@ -110,44 +129,7 @@
               </div>
             </template>
           </PrimeCard>
-
-          <PrimeCard class="project-panel app-panel project-panel--recent">
-            <template #title>
-              <span>
-                {{ recentSectionTitle }}
-              </span>
-            </template>
-            <template #subtitle>
-              {{ t('MainView.sections.recentSubtitle') }}
-            </template>
-            <template #content>
-              <div
-                class="project-panel__list project-panel__list--compact app-list app-list--compact"
-              >
-                <button
-                  v-for="recentProject in recentProjects"
-                  :key="recentProject.id"
-                  type="button"
-                  class="project-list-item app-list-item project-list-item--recent"
-                >
-                  <span>
-                    <span class="project-list-item__title app-list-item__title">
-                      {{ recentProject.name }}
-                    </span>
-                    <span class="project-list-item__meta app-list-item__meta">
-                      {{ recentProject.activity }} · {{ recentProject.when }}
-                    </span>
-                  </span>
-                  <i
-                    class="pi pi-history project-list-item__ghost-icon app-icon-muted"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-              </div>
-            </template>
-          </PrimeCard>
         </div>
-
         <div class="project-hub__side-column app-stack">
           <PrimeCard class="project-panel app-panel tutorial-panel">
             <template #title>
@@ -194,7 +176,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import {
+  useCoreProjectStore,
+  usePreferencesStore
+} from '@/renderer/stores/stores.exports'
 import { RENDERER_ASSETS } from '@/renderer/utils'
 import { APP_BRANDING } from '@/shared/branding'
 import AppToolbarControls from '@/renderer/components/common/AppToolbarControls.vue'
@@ -223,13 +210,6 @@ interface ProjectListItem {
   statusSeverity: Exclude<TagSeverity, 'contrast'>
 }
 
-interface RecentProjectItem {
-  id: number
-  name: string
-  activity: string
-  when: string
-}
-
 interface TutorialItem {
   id: number
   title: string
@@ -241,11 +221,16 @@ interface TutorialItem {
 }
 
 const appVersion = ref('0.0.0')
+const router = useRouter()
+const coreProjectStore = useCoreProjectStore()
+const preferencesStore = usePreferencesStore()
 const appLogoSrc = RENDERER_ASSETS.logo
 const appNameLabel = APP_BRANDING.applicationName
 const { t } = useI18n()
+const isLoadingProjects = ref(false)
+const projectsLoadError = ref<string | null>(null)
+const projectItems = ref<ProjectListItem[]>([])
 const startSectionTitle = computed(() => t('MainView.sections.startTitle'))
-const recentSectionTitle = computed(() => t('MainView.sections.recentTitle'))
 const tutorialSectionTitle = computed(() =>
   t('MainView.sections.tutorialsTitle')
 )
@@ -271,54 +256,7 @@ const startActions = computed<StartAction[]>(() => [
   }
 ])
 
-const projects = computed<ProjectListItem[]>(() => [
-  {
-    id: 1,
-    code: 'TP-CORE',
-    name: 'Vendor Evaluation Core',
-    description: 'Base del modelo project y arranque incremental del dominio.',
-    status: t('MainView.projects.active'),
-    statusSeverity: 'success'
-  },
-  {
-    id: 2,
-    code: 'ERP-2026',
-    name: 'ERP Selection 2026',
-    description:
-      'Evaluacion comparativa para shortlist de soluciones corporativas.',
-    status: t('MainView.projects.draft'),
-    statusSeverity: 'info'
-  },
-  {
-    id: 3,
-    code: 'GIS-LATAM',
-    name: 'GIS Platform LATAM',
-    description: 'Analisis multi-vendor con foco en capacidades geoespaciales.',
-    status: t('MainView.projects.review'),
-    statusSeverity: 'warning'
-  }
-])
-
-const recentProjects = computed<RecentProjectItem[]>(() => [
-  {
-    id: 1,
-    name: 'Vendor Evaluation Core',
-    activity: t('MainView.recent.schemaRegenerated'),
-    when: 'hace 5 min'
-  },
-  {
-    id: 2,
-    name: 'ERP Selection 2026',
-    activity: t('MainView.recent.kickoffChecklist'),
-    when: 'hace 1 h'
-  },
-  {
-    id: 3,
-    name: 'GIS Platform LATAM',
-    activity: t('MainView.recent.vendorsPending'),
-    when: 'ayer'
-  }
-])
+const projects = computed<ProjectListItem[]>(() => projectItems.value)
 
 const tutorials = computed<TutorialItem[]>(() => [
   {
@@ -356,8 +294,37 @@ const getApplicationVersionFromMainProcess = (): void => {
   })
 }
 
+const loadProjects = async (): Promise<void> => {
+  isLoadingProjects.value = true
+  projectsLoadError.value = null
+
+  try {
+    const response = await coreProjectStore.listCoreProjects()
+    projectItems.value = response.map((project) => ({
+      id: project.id,
+      code: project.code,
+      name: project.name,
+      description: project.description ?? t('MainView.projects.noDescription'),
+      status: t('MainView.projects.active'),
+      statusSeverity: 'success'
+    }))
+  } catch (error) {
+    console.error('Failed to load core projects', error)
+    projectsLoadError.value = t('MainView.projects.loadError')
+    projectItems.value = []
+  } finally {
+    isLoadingProjects.value = false
+  }
+}
+
+const openProject = async (projectId: number): Promise<void> => {
+  preferencesStore.setCurrentProjectId(projectId)
+  await router.push('/project')
+}
+
 onMounted((): void => {
   getApplicationVersionFromMainProcess()
+  void loadProjects()
 })
 </script>
 
@@ -411,7 +378,6 @@ onMounted((): void => {
   );
 }
 
-.project-panel--recent,
 .tutorial-panel {
   background: var(--app-surface);
 }
@@ -422,12 +388,15 @@ onMounted((): void => {
   gap: 0.45rem;
 }
 
-.project-panel__list--compact {
-  gap: 0.4rem;
-}
-
 .project-list-item {
   background: var(--app-surface-soft);
+}
+
+.project-panel__feedback {
+  padding: var(--app-space-4);
+  border: 1px dashed var(--app-border-strong);
+  border-radius: var(--app-radius-block);
+  background: var(--app-surface);
 }
 
 .project-list-item--action {
@@ -438,12 +407,7 @@ onMounted((): void => {
   );
 }
 
-.project-list-item--recent {
-  padding-block: 0.72rem;
-}
-
 .project-list-item__icon,
-.project-list-item__ghost-icon,
 .project-list-item__arrow {
   font-size: 1.1rem;
 }
