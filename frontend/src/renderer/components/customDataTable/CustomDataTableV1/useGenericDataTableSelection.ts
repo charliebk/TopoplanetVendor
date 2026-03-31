@@ -6,14 +6,6 @@ import type {
   GenericDataTableSelectionPayload,
   GenericDataTableSelectionState
 } from './generic-data-table.types'
-import { computed, ref, watch } from 'vue'
-import type {
-  GenericDataTableRow,
-  GenericDataTableSelectionOptions,
-  GenericDataTableSelectionOverride,
-  GenericDataTableSelectionPayload,
-  GenericDataTableSelectionState
-} from './generic-data-table.types'
 
 const buildRowKey = <Row extends GenericDataTableRow>(
   row: Row,
@@ -35,6 +27,38 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
   const overrides = ref<Record<string, GenericDataTableSelectionOverride<Row>>>(
     {}
   )
+
+  const disabledKeys = computed(() =>
+    Array.from(new Set(opts.disabledKeys.value))
+  )
+
+  const disabledKeySet = computed(() => new Set(disabledKeys.value))
+
+  const selectableVisibleRows = computed(() => {
+    return opts.visibleRows.value.filter(
+      (row) => !disabledKeySet.value.has(rowKeyOf(row))
+    )
+  })
+
+  const disabledCount = computed(() => {
+    if (opts.rowDisabledSelectionScope.value === 'filtered') {
+      return disabledKeys.value.length
+    }
+
+    return null
+  })
+
+  const selectableFilteredCount = computed(() => {
+    if (opts.filteredTotal.value === null) {
+      return null
+    }
+
+    if (opts.rowDisabledSelectionScope.value !== 'filtered') {
+      return opts.filteredTotal.value
+    }
+
+    return Math.max(0, opts.filteredTotal.value - disabledKeys.value.length)
+  })
 
   const rowKeyOf = (row: Row): string =>
     buildRowKey(row, opts.rowKeyField.value)
@@ -63,6 +87,11 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
 
   const isRowSelected = (row: Row): boolean => {
     const key = rowKeyOf(row)
+
+    if (!key || disabledKeySet.value.has(key)) {
+      return false
+    }
+
     const override = overrides.value[key]
 
     if (override?.mode === 'selected') {
@@ -82,8 +111,8 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
 
   const allVisibleSelected = computed(() => {
     return (
-      opts.visibleRows.value.length > 0 &&
-      opts.visibleRows.value.every((row) => isRowSelected(row))
+      selectableVisibleRows.value.length > 0 &&
+      selectableVisibleRows.value.every((row) => isRowSelected(row))
     )
   })
 
@@ -93,29 +122,68 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
 
   const selectedCount = computed(() => {
     if (allFiltered.value) {
-      if (opts.filteredTotal.value === null) {
+      if (selectableFilteredCount.value === null) {
         return null
       }
 
-      return Math.max(0, opts.filteredTotal.value - unselectedKeys.value.length)
+      return Math.max(
+        0,
+        selectableFilteredCount.value - unselectedKeys.value.length
+      )
     }
 
     return selectedKeys.value.length
+  })
+
+  const batchReason = computed(() => {
+    if (!allFiltered.value || opts.allowSelectAllFiltered.value) {
+      return null
+    }
+
+    if (opts.rowDisabledSelectionScope.value === 'visible') {
+      return 'Disabled rows are only resolved for the visible page.'
+    }
+
+    if (opts.rowDisabledSelectionScope.value === 'filtered') {
+      return 'Disabled rows are not resolved yet for the full filtered result.'
+    }
+
+    return 'Filtered batch selection is not available for the current state.'
+  })
+
+  const batchPayload = computed(() => {
+    const strategy = allFiltered.value ? 'filterQuery' : 'includeKeys'
+
+    return {
+      strategy,
+      filterQuery: allFiltered.value ? opts.query.value : null,
+      includeKeys: allFiltered.value ? [] : selectedKeys.value,
+      excludeKeys: allFiltered.value ? unselectedKeys.value : [],
+      disabledKeys: disabledKeys.value,
+      ready: !allFiltered.value || opts.allowSelectAllFiltered.value,
+      reason: batchReason.value
+    }
   })
 
   const getSelectionPayload = (): GenericDataTableSelectionPayload<Row> => ({
     rowKeyField: opts.rowKeyField.value,
     query: opts.query.value,
     allFiltered: allFiltered.value,
+    rowDisabledSelectionScope: opts.rowDisabledSelectionScope.value,
+    disabledRowsResolved: opts.disabledRowsResolved.value,
     filteredTotal: opts.filteredTotal.value,
     baselineTotal: opts.baselineTotal.value,
+    disabledCount: disabledCount.value,
+    selectableFilteredCount: selectableFilteredCount.value,
     selectedCount: selectedCount.value,
     visibleSelectedCount: visibleSelectedRows.value.length,
     selectedRows: allFiltered.value
       ? visibleSelectedRows.value
       : selectedRows.value,
     selectedKeys: allFiltered.value ? [] : selectedKeys.value,
+    disabledKeys: disabledKeys.value,
     unselectedKeys: unselectedKeys.value,
+    batch: batchPayload.value,
     overrides: Object.values(overrides.value)
   })
 
@@ -165,6 +233,10 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
       return
     }
 
+    if (disabledKeySet.value.has(key)) {
+      return
+    }
+
     const nextOverrides = { ...overrides.value }
 
     if (!allFiltered.value) {
@@ -194,7 +266,7 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
     for (const row of rows) {
       const key = rowKeyOf(row)
 
-      if (!key) {
+      if (!key || disabledKeySet.value.has(key)) {
         continue
       }
 
@@ -205,28 +277,13 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
     emitChange()
   }
 
-  const selectAllFiltered = (rows: Row[] = opts.visibleRows.value): void => {
-    if (!opts.enabled.value) {
+  const selectAllFiltered = (_rows: Row[] = opts.visibleRows.value): void => {
+    if (!opts.enabled.value || !opts.allowSelectAllFiltered.value) {
       return
     }
 
     allFiltered.value = true
-    const nextOverrides: Record<
-      string,
-      GenericDataTableSelectionOverride<Row>
-    > = {}
-
-    for (const row of rows) {
-      const key = rowKeyOf(row)
-
-      if (!key) {
-        continue
-      }
-
-      nextOverrides[key] = { key, mode: 'selected', row }
-    }
-
-    overrides.value = nextOverrides
+    overrides.value = {}
     emitChange()
   }
 
@@ -246,7 +303,7 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
     for (const row of rows) {
       const key = rowKeyOf(row)
 
-      if (!key) {
+      if (!key || disabledKeySet.value.has(key)) {
         continue
       }
 
@@ -268,9 +325,16 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
       opts.filteredTotal,
       opts.baselineTotal,
       opts.rowKeyField,
-      opts.enabled
+      opts.enabled,
+      opts.disabledKeys,
+      opts.disabledRowsResolved,
+      opts.rowDisabledSelectionScope,
+      opts.allowSelectAllFiltered
     ],
-    ([visibleRows, , , , rowKeyField, enabled], previousValues) => {
+    (
+      [visibleRows, , , , rowKeyField, enabled, , , , allowSelectAllFiltered],
+      previousValues
+    ) => {
       const previousRowKeyField = previousValues?.[4]
 
       if (!enabled) {
@@ -281,6 +345,10 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
         }
 
         return
+      }
+
+      if (!allowSelectAllFiltered && allFiltered.value) {
+        allFiltered.value = false
       }
 
       if (previousRowKeyField && previousRowKeyField !== rowKeyField) {

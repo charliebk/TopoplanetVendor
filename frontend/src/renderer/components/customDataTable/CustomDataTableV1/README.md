@@ -10,6 +10,7 @@ La intencion de esta carpeta es que pueda copiarse a otro proyecto sin arrastrar
 
 - `GenericDataTable.vue`: componente visual principal.
 - `GenericDataTableCountBar.vue`: contador desacoplado reutilizable para listados.
+- `toBatchRequest.ts`: helper publico para traducir seleccion detallada a request batch.
 - `useGenericDataTableQuery.ts`: normalizacion de query y traduccion a filtros de PrimeVue.
 - `useGenericDataTableSelection.ts`: seleccion avanzada con `select all filtered`, overrides y payload estable.
 - `generic-data-table.types.ts`: tipos publicos del modulo.
@@ -36,6 +37,7 @@ Importa siempre desde `custom-data-table-v1.public.ts` para que la carpeta tenga
 import {
   GenericDataTable,
   GenericDataTableCountBar,
+  toBatchRequest,
   useGenericDataTableSelection,
   useGenericDataTableQuery,
   type GenericDataTableColumn,
@@ -96,12 +98,16 @@ Compatibilidad asumida por implementacion actual:
 - `provider-error`: emite `{ query, message, cause }` cuando falla un `dataProvider`.
 - `refresh`: emite `{ query, providerMode }` al usar el boton integrado de refresh o la API expuesta.
 - `selection-change`: emite un payload estable para operaciones batch con `query`, `allFiltered`, `selectedKeys`, `unselectedKeys`, `selectedCount` y `selectedRows` visibles/materializados.
+- El mismo payload incluye `batch`, un bloque derivado listo para backend con `strategy`, `filterQuery`, `includeKeys`, `excludeKeys`, `disabledKeys`, `ready` y `reason`.
 
 ### Props de seleccion
 
 - `selectionMode`: `none` o `multiple`.
 - `showSelectionToolbar`: muestra acciones de seleccionar pagina, seleccionar filtrado y limpiar seleccion.
 - `selectPageLabel`, `selectFilteredLabel`, `clearSelectionLabel`: textos de los controles de seleccion.
+- `disabledRowSelectionScope`: `visible` o `filtered`. En provider mode, `select all filtered` solo es seguro cuando el alcance es `filtered`.
+- `disabledFilteredRowKeys`: claves de filas deshabilitadas conocidas para el resultado filtrado completo.
+- `disabledFilteredRowsResolved`: confirma que `disabledFilteredRowKeys` ya representa el conjunto filtrado actual.
 
 ### Props de toolbar y estados
 
@@ -142,6 +148,16 @@ El payload de seleccion queda pensado para backend batch operations:
 
 - `allFiltered=false`: usar `selectedKeys`.
 - `allFiltered=true`: usar `query` + `unselectedKeys` como exclusiones.
+- Cuando hay `rowDisabled`, el payload tambien expone `rowDisabledSelectionScope`, `disabledRowsResolved`, `disabledKeys`, `disabledCount` y `selectableFilteredCount`.
+- En provider mode, si solo se conocen filas deshabilitadas visibles, la tabla bloquea `select all filtered` para no prometer una seleccion masiva incorrecta.
+
+Contrato simplificado para endpoints batch:
+
+- `selection.batch.strategy === 'includeKeys'`: enviar `selection.batch.includeKeys`.
+- `selection.batch.strategy === 'filterQuery'`: enviar `selection.batch.filterQuery` + `selection.batch.excludeKeys`.
+- `selection.batch.disabledKeys` siempre queda disponible si el backend quiere auditar o informar exclusiones.
+- `selection.batch.ready === false` indica que todavia no es seguro ejecutar una operacion batch filtrada.
+- `toBatchRequest(selection)` devuelve ese mismo contrato simplificado sin que el consumidor tenga que leer `selection.batch` directamente.
 
 Desde Sprint 6, la API expuesta via `ref` tambien incorpora `refresh()` y `clearFilters()` para que la vista consumidora pueda disparar recarga o limpiar filtros sin envolver la tabla.
 
@@ -186,6 +202,9 @@ const columns: Array<GenericDataTableColumn<AuditRow>> = [
 ]
 
 const isRowDisabled = (row: AuditRow) => !row.originActive
+const disabledFilteredRowKeys = computed(() =>
+  filteredRows.value.filter(isRowDisabled).map((row) => String(row.id))
+)
 ```
 
 ```vue
@@ -194,6 +213,9 @@ const isRowDisabled = (row: AuditRow) => !row.originActive
   :rows="rows"
   :query="query"
   :row-disabled="isRowDisabled"
+  disabled-row-selection-scope="filtered"
+  :disabled-filtered-row-keys="disabledFilteredRowKeys"
+  disabled-filtered-rows-resolved
   @row-click="onRowClick"
   @action="onAction"
 />
@@ -429,6 +451,7 @@ Este caso usa provider mode y escucha `selection-change` para enviar operaciones
 import { ref } from 'vue'
 import {
   GenericDataTable,
+  toBatchRequest,
   type GenericDataTableExpose,
   type GenericDataTableQuery,
   type GenericDataTableSelectionChangeHandler,
@@ -456,6 +479,20 @@ const onSelectionChange: GenericDataTableSelectionChangeHandler<AuditRow> = (
   payload
 ) => {
   selection.value = payload
+
+  const batchRequest = toBatchRequest(payload)
+
+  if (batchRequest?.ready) {
+    if (batchRequest.strategy === 'includeKeys') {
+      console.info('Batch by keys', batchRequest.includeKeys)
+    } else {
+      console.info(
+        'Batch by query',
+        batchRequest.filterQuery,
+        batchRequest.excludeKeys
+      )
+    }
+  }
 }
 
 function refreshSelectionSnapshot() {

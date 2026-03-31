@@ -51,6 +51,9 @@
               count-bar-position="both"
               count-bar-show-shown
               :row-disabled="isDemoRowDisabled"
+              disabled-row-selection-scope="filtered"
+              :disabled-filtered-row-keys="demoDisabledFilteredRowKeys"
+              disabled-filtered-rows-resolved
               @update:query="onDemoQueryChange"
               @row-click="onDemoRowClick"
               @action="onDemoAction"
@@ -63,7 +66,8 @@
                     {{ slotProps.filteredTotal }} filtered audits
                   </span>
                   <span class="project-main__toolbar-note">
-                    Legacy Import rows are disabled for click and actions
+                    Legacy Import rows are resolved across the full filtered
+                    result before select-all-filtered is allowed
                   </span>
                 </div>
               </template>
@@ -126,8 +130,8 @@
                     Selection payload
                   </span>
                   <span class="project-main__query-caption">
-                    Stable batch payload including query, selected keys and
-                    filtered context
+                    Raw selection state plus a derived `batch` block ready for
+                    backend endpoints
                   </span>
                 </div>
                 <PrimeButton
@@ -141,6 +145,19 @@
               </div>
               <pre class="project-main__query-code">{{
                 demoSelectionPreview
+              }}</pre>
+            </div>
+
+            <div class="project-main__query-panel">
+              <div class="project-main__query-header">
+                <span class="project-main__query-title"> Batch request </span>
+                <span class="project-main__query-caption">
+                  Real example using `toBatchRequest(selection)` from the public
+                  API
+                </span>
+              </div>
+              <pre class="project-main__query-code">{{
+                demoBatchRequestPreview
               }}</pre>
             </div>
           </div>
@@ -161,6 +178,7 @@ import {
 import type { CoreProjectResponse } from '@/renderer/stores/stores.exports'
 import {
   GenericDataTable,
+  toBatchRequest,
   type GenericDataTableActionHandler,
   type GenericDataTableColumn,
   type GenericDataTableDataProvider,
@@ -471,12 +489,30 @@ const demoQueryPreview = computed(() =>
   JSON.stringify(demoQuery.value, null, 2)
 )
 
+const demoFilteredRows = computed(() => applyDemoQuery(demoQuery.value))
+
+const demoDisabledFilteredRowKeys = computed(() => {
+  return demoFilteredRows.value
+    .filter((row) => isDemoRowDisabled(row))
+    .map((row) => String(row.id))
+})
+
 const demoSelectionPreview = computed(() => {
   if (!demoSelection.value) {
     return 'No selection payload emitted yet.'
   }
 
   return JSON.stringify(demoSelection.value, null, 2)
+})
+
+const demoBatchRequestPreview = computed(() => {
+  const batchRequest = toBatchRequest(demoSelection.value)
+
+  if (!batchRequest) {
+    return 'No batch request available yet.'
+  }
+
+  return JSON.stringify(batchRequest, null, 2)
 })
 
 const isDemoRowDisabled = (row: DemoAuditRow): boolean => !row.originActive

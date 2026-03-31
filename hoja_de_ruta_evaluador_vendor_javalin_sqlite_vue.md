@@ -437,33 +437,33 @@ frontend/src/renderer/
 
 ---
 
-# 10. Hoja de ruta por sprints
+## 10. Hoja de ruta por sprints
 
 ---
 
-# Sprint 0 — Blindar la arquitectura base y congelar convenciones
+### Sprint 0 — Blindar la arquitectura base y congelar convenciones
 
-## Objetivo
+Objetivo:
 
 Partir del template actual y dejar cerradas las reglas del proyecto antes de empezar a programar cosas.
 
-## Tablas implicadas
+Tablas implicadas:
 
 Ninguna.
 
-## Backend implicado
+Backend implicado:
 
 - `App.java`
 - `ControllerRegister.java`
 - `DatabaseSchemaManager.java`
 
-## Frontend implicado
+Frontend implicado:
 
 - `frontend/src/renderer/router`
 - `frontend/src/renderer/plugins`
 - `frontend/src/renderer/stores`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - Revisar template actual.
 - Crear `docs/architecture.md`
@@ -471,7 +471,7 @@ Ninguna.
 - Crear `docs/modules.md`
 - Documentar naming, flujo Electron↔Javalin↔SQLite y reglas REST.
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero congelar la arquitectura base de un proyecto Electron + Vue 3 + PrimeVue + Javalin + SQLite ya existente.
@@ -493,7 +493,7 @@ Tareas:
 Devuélveme contenido completo archivo por archivo.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - arquitectura congelada
 - convenciones escritas
@@ -501,27 +501,27 @@ Devuélveme contenido completo archivo por archivo.
 
 ---
 
-# Sprint 1 — Diseñar el modelo relacional completo en SQLite
+### Sprint 1 — Diseñar el modelo relacional completo en SQLite
 
-## Objetivo
+Objetivo:
 
 Pasar de idea funcional a modelo de datos real.
 
-## Tablas implicadas
+Tablas implicadas:
 
 Todas las tablas base del apartado 5.
 
-## Backend implicado
+Backend implicado:
 
 - `db/DatabaseSchemaManager.java`
 - carpeta nueva `manager/*/Query`
 
-## Frontend implicado
+Frontend implicado:
 
 - `frontend/src/renderer/stores/*`
 - `frontend/src/renderer/views/*` (solo cableado minimo)
 
-## Trabajo exacto
+Trabajo exacto:
 
 - Definir DDL completo.
 - Definir claves foráneas.
@@ -538,7 +538,7 @@ Todas las tablas base del apartado 5.
 - Crear stores Pinia nuevos por dominio de tabla para cableado frontend.
 - Retirar stores/view wiring legacy que dependían del modelo antiguo.
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero diseñar el esquema SQLite completo para una aplicación de evaluación de vendors multi-proyecto.
@@ -581,7 +581,7 @@ Tareas:
 9. Incluye soporte para estado de respuesta y casos no respondidos/no aplicables.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - esquema ejecutable
 - relaciones coherentes project -> vendor -> product y project -> question
@@ -596,34 +596,34 @@ Tareas:
 
 ---
 
-# Sprint 2 — Crear sistema de migraciones y bootstrap de base de datos
+### Sprint 2 — Crear sistema de migraciones y bootstrap de base de datos
 
-## Objetivo
+Objetivo:
 
 Que SQLite no sea un archivo mágico, sino una base controlada por migraciones.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `schema_version`
 - resto del esquema inicial
 
-## Backend implicado
+Backend implicado:
 
 - `DatabaseSchemaManager.java`
 - `db/migration/*`
 
-## Frontend implicado
+Frontend implicado:
 
 Ninguno.
 
-## Trabajo exacto
+Trabajo exacto:
 
 - decidir estrategia de migraciones
 - crear tabla de control de versión
 - aplicar migraciones idempotentes al arranque
 - dejar seeds mínimos
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero implementar un sistema simple y robusto de migraciones SQLite en un backend Javalin.
@@ -638,7 +638,7 @@ Tareas:
 7. Quiero código limpio y auditable.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - al arrancar se crea la base
 - se registran migraciones aplicadas
@@ -646,29 +646,29 @@ Tareas:
 
 ---
 
-# Sprint 3 — Módulo Project Hub
+### Sprint 3 — Módulo Project Hub
 
-## Objetivo
+Objetivo:
 
 Construir la primera ventana tipo VS Code para seleccionar proyecto.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `project`
 - `project_version`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/coreproject/*`
 - `manager/coreprojectversion/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/ProjectHubView`
 - `components/project-hub/*`
 - `stores/coreProject/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - CRUD de proyectos
 - listado de recientes
@@ -677,7 +677,7 @@ Construir la primera ventana tipo VS Code para seleccionar proyecto.
 - archivar proyecto
 - abrir proyecto
 
-## PrimeVue
+PrimeVue:
 
 - `DataTable`
 - `Dialog`
@@ -687,7 +687,7 @@ Construir la primera ventana tipo VS Code para seleccionar proyecto.
 - `Tag`
 - `Button`
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir el módulo Project Hub para una app Electron + Vue + Javalin + SQLite.
@@ -715,7 +715,7 @@ Frontend:
 Quiero implementación archivo por archivo.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - abre la app y se ve el launcher
 - se puede crear un proyecto
@@ -723,21 +723,21 @@ Quiero implementación archivo por archivo.
 
 ---
 
-# Sprint 4 — Shell del workspace del proyecto
+### Sprint 4 — Shell del workspace del proyecto
 
-## Objetivo
+Objetivo:
 
 Entrar en un proyecto y tener layout real de aplicación.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `project`
 
-## Backend implicado
+Backend implicado:
 
 - lectura de proyecto activo
 
-## Frontend implicado
+Frontend implicado:
 
 - `ProjectWorkspaceView.vue`
 - `components/layout/*`
@@ -745,14 +745,14 @@ Entrar en un proyecto y tener layout real de aplicación.
 - breadcrumb
 - sidebar
 
-## Trabajo exacto
+Trabajo exacto:
 
 - layout lateral
 - header de proyecto
 - navegación por módulos
 - tabs o zonas principales
 
-## PrimeVue
+PrimeVue:
 
 - `Menubar`
 - `PanelMenu`
@@ -760,7 +760,7 @@ Entrar en un proyecto y tener layout real de aplicación.
 - `Splitter`
 - `TabView`
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir el shell del workspace al abrir un proyecto.
@@ -779,7 +779,7 @@ Tareas:
 No metas todavía lógica de módulos internos.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - al abrir proyecto se entra en workspace
 - layout estable
@@ -787,13 +787,13 @@ No metas todavía lógica de módulos internos.
 
 ---
 
-# Sprint 5 — Catalogos base: variables por proyecto, escalas e idiomas
+### Sprint 5 — Catalogos base: variables por proyecto, escalas e idiomas
 
-## Objetivo
+Objetivo:
 
 Crear la base configurable del sistema.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `project_variable_type`
 - `project_variable_option`
@@ -801,19 +801,19 @@ Crear la base configurable del sistema.
 - `scale_option`
 - `localized_text`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/variable/*`
 - `manager/scale/*`
 - `manager/scaleoption/*`
 - `manager/settings/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/settings/*`
 - `stores/settings/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - CRUD de tipos de variable
 - CRUD de opciones por tipo
@@ -821,7 +821,7 @@ Crear la base configurable del sistema.
 - CRUD de opciones de escala
 - gestión básica de idiomas
 
-## PrimeVue
+PrimeVue:
 
 - `DataTable`
 - `Dialog`
@@ -829,7 +829,7 @@ Crear la base configurable del sistema.
 - `Dropdown`
 - `InputNumber`
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir el módulo de configuración base del evaluador.
@@ -852,35 +852,35 @@ Tareas frontend:
 Dame implementación archivo por archivo.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - se pueden configurar variables por proyecto
 - se puede definir una escala de respuesta real
 
 ---
 
-# Sprint 6 — Módulo de preguntas
+### Sprint 6 — Módulo de preguntas
 
-## Objetivo
+Objetivo:
 
 Gestionar preguntas funcionales y técnicas como entidad seria.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `question`
 - `project_variable_option`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/question/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/questions/*`
 - `components/questions/*`
 - `stores/question/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - alta/edición/baja lógica
 - filtro por tipo
@@ -889,7 +889,7 @@ Gestionar preguntas funcionales y técnicas como entidad seria.
 - activar/desactivar
 - importación futura preparada
 
-## PrimeVue
+PrimeVue:
 
 - `DataTable`
 - `Column`
@@ -897,7 +897,7 @@ Gestionar preguntas funcionales y técnicas como entidad seria.
 - `Drawer`
 - `Checkbox`
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir el módulo de preguntas del evaluador.
@@ -916,43 +916,43 @@ Tareas:
 Quiero código completo por archivo.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - preguntas funcionales y técnicas viven en la misma arquitectura
 - no hay que tocar código para añadir preguntas nuevas
 
 ---
 
-# Sprint 7 — Módulo de vendors y productos
+### Sprint 7 — Módulo de vendors y productos
 
-## Objetivo
+Objetivo:
 
 Separar bien vendor de producto, que es donde Excel solía convertirse en barro.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `vendor`
 - `product`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/vendor/*`
 - `manager/product/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/vendors/*`
 - `views/products/*`
 - `stores/vendor/*`
 - `stores/product/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - CRUD vendor
 - CRUD productos por vendor
 - vista maestro-detalle
 
-## PrimeVue
+PrimeVue:
 
 - `DataTable`
 - `TreeTable` opcional
@@ -960,7 +960,7 @@ Separar bien vendor de producto, que es donde Excel solía convertirse en barro.
 - `Tag`
 - `Badge`
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir los módulos de vendors y productos en una app de evaluación de software.
@@ -984,40 +984,40 @@ Usa PrimeVue DataTable, Dialog, Tag y Badge.
 Quiero implementación archivo por archivo.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - se puede registrar Bentley mañana y 20 productos si hace falta
 - no cambia la estructura del sistema
 
 ---
 
-# Sprint 8 — Módulo de pesos (sin evaluadores)
+### Sprint 8 — Módulo de pesos (sin evaluadores)
 
-## Objetivo
+Objetivo:
 
 Modelar correctamente pesos por categoría y por pregunta.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `question_weight`
 - `category_weight`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/weight/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/settings/weights/*`
 - `stores/settings/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - peso por categoría
 - peso por pregunta
 - validaciones de suma de pesos
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir el sistema de pesos del evaluador.
@@ -1036,20 +1036,20 @@ Tareas:
 Quiero una solución robusta y auditable.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - pesos configurables
 - errores visibles si la configuración es incoherente
 
 ---
 
-# Sprint 9 — Módulo de captura de respuestas
+### Sprint 9 — Módulo de captura de respuestas
 
-## Objetivo
+Objetivo:
 
 Construir el corazón de la app.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `response`
 - `question`
@@ -1058,24 +1058,24 @@ Construir el corazón de la app.
 - `question_response_option`
 - `scale_option`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/response/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/responses/*`
 - `components/responses/*`
 - `stores/response/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - grid de captura
 - filtros por vendor, product, tipo y categoría
 - guardado masivo
 - edición de comentario y evidencia
 
-## PrimeVue
+PrimeVue:
 
 - `DataTable`
 - `Dropdown`
@@ -1084,7 +1084,7 @@ Construir el corazón de la app.
 - `Toast`
 - `ConfirmDialog`
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir el módulo de captura de respuestas del evaluador.
@@ -1110,37 +1110,37 @@ Tareas frontend:
 Dame implementación archivo por archivo.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - ya se pueden evaluar vendors de verdad
 - el sistema deja de ser maqueta
 
 ---
 
-# Sprint 10 — Cálculo de métricas y vistas SQL de agregación
+### Sprint 10 — Cálculo de métricas y vistas SQL de agregación
 
-## Objetivo
+Objetivo:
 
 Mover el cerebro numérico al modelo relacional.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `response`
 - `question_weight`
 - `category_weight`
 - vistas `vw_*`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/dashboard/*`
 - `manager/response/Query/*`
 - `manager/dashboard/Services/*`
 
-## Frontend implicado
+Frontend implicado:
 
 Ninguno todavía.
 
-## Trabajo exacto
+Trabajo exacto:
 
 - calcular score base
 - media
@@ -1151,7 +1151,7 @@ Ninguno todavía.
 - vistas SQL
 - servicios Java para lectura
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir el motor de métricas de un evaluador relacional en SQLite.
@@ -1174,37 +1174,37 @@ Tareas:
 6. Devuélveme SQL + clases Query + Service.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - métricas coherentes
 - ranking ya disponible por backend
 
 ---
 
-# Sprint 11 — Dashboard ejecutivo por proyecto
+### Sprint 11 — Dashboard ejecutivo por proyecto
 
-## Objetivo
+Objetivo:
 
 Construir la capa visible de decisión.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `vw_vendor_score_summary`
 - `vw_vendor_category_score`
 - `vw_vendor_question_score`
 - `vw_project_dashboard_summary`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/dashboard/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/dashboard/*`
 - `components/dashboard/*`
 - `stores/dashboard/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - KPI cards
 - ranking
@@ -1213,7 +1213,7 @@ Construir la capa visible de decisión.
 - cobertura
 - distribución de respuestas
 
-## PrimeVue
+PrimeVue:
 
 - `Chart`
 - `Panel`
@@ -1221,7 +1221,7 @@ Construir la capa visible de decisión.
 - `Tag`
 - `DataTable`
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir el dashboard ejecutivo del proyecto.
@@ -1244,36 +1244,36 @@ Tareas frontend:
 Quiero implementación archivo por archivo.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - dashboard útil de verdad
 - no solo bonito, también interpretable
 
 ---
 
-# Sprint 12 — Resumen ejecutivo y ficha comparativa de vendor
+### Sprint 12 — Resumen ejecutivo y ficha comparativa de vendor
 
-## Objetivo
+Objetivo:
 
 Crear una lectura más humana que el dashboard bruto.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - vistas agregadas
 - `vendor`
 - `product`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/dashboard/*`
 - `manager/vendor/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/vendors/VendorDetailView.vue`
 - `components/dashboard/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - ficha por vendor
 - resumen por fortalezas
@@ -1281,7 +1281,7 @@ Crear una lectura más humana que el dashboard bruto.
 - bottom categorías
 - preguntas críticas sin cobertura
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero una vista de detalle por vendor.
@@ -1303,41 +1303,41 @@ Tareas:
 4. Mantén diseño modular y reutilizable.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - cada vendor tiene ficha comparativa seria
 
 ---
 
-# Sprint 13 — Versionado de configuración por proyecto
+### Sprint 13 — Versionado de configuración por proyecto
 
-## Objetivo
+Objetivo:
 
 Evitar el clásico desastre de alguien cambió preguntas o pesos y ya no sabemos por qué cambió el dashboard.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `project_version`
 - `audit_log`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/projectversion/*`
 - `manager/audit/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/versions/*`
 - `views/audit/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - crear snapshot de configuración
 - activar versión
 - ver diff lógico
 - trazar cambios
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero implementar versionado de configuración por proyecto.
@@ -1354,32 +1354,32 @@ Tareas:
 6. No permitas editar directamente versiones cerradas.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - cambios importantes trazables
 - menos suicidio operativo
 
 ---
 
-# Sprint 14 — Importación desde legados
+### Sprint 14 — Importación desde legados
 
-## Objetivo
+Objetivo:
 
 Migrar datos históricos o plantillas antiguas al nuevo sistema.
 
-## Tablas implicadas
+Tablas implicadas:
 
 Prácticamente todas las de configuración y captura.
 
-## Backend implicado
+Backend implicado:
 
 - `io/coreproject/Import/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/settings/import/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - importar CSV/XLSX exportado
 - mapear preguntas
@@ -1387,7 +1387,7 @@ Prácticamente todas las de configuración y captura.
 - mapear respuestas
 - validar inconsistencias
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir un módulo de importación para poblar un proyecto desde archivos legados.
@@ -1403,39 +1403,39 @@ Tareas:
 5. Devuelve resumen de inserciones, actualizaciones y errores.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - se puede poblar un proyecto sin carga manual infinita
 
 ---
 
-# Sprint 15 — Exportación de resultados y snapshot del proyecto
+### Sprint 15 — Exportación de resultados y snapshot del proyecto
 
-## Objetivo
+Objetivo:
 
 Poder sacar evidencia, informes y congelar estados.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - vistas agregadas
 - tablas del proyecto
 
-## Backend implicado
+Backend implicado:
 
 - `io/coreproject/Export/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `views/settings/export/*`
 
-## Trabajo exacto
+Trabajo exacto:
 
 - export resumen
 - export respuestas
 - export métricas
 - export snapshot JSON del proyecto
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero construir el módulo de exportación del proyecto.
@@ -1455,39 +1455,39 @@ Tareas:
 4. Mantén el código desacoplado por caso de uso.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - el proyecto puede salir del sistema con estructura clara
 
 ---
 
-# Sprint 16 — Multiidioma real de UI y textos de proyecto
+### Sprint 16 — Multiidioma real de UI y textos de proyecto
 
-## Objetivo
+Objetivo:
 
 Que la app soporte PT / ES / EN con seriedad.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - `localized_text`
 
-## Backend implicado
+Backend implicado:
 
 - `manager/settings/*`
 
-## Frontend implicado
+Frontend implicado:
 
 - `plugins/i18n.ts`
 - `locales/*`
 - pantallas de configuración
 
-## Trabajo exacto
+Trabajo exacto:
 
 - textos fijos UI por locale
 - textos configurables del proyecto
 - selector de idioma
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero añadir soporte multiidioma PT, ES y EN al proyecto.
@@ -1505,36 +1505,36 @@ Tareas:
 5. No hardcodees textos por todas partes.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - idioma intercambiable
 - sistema preparado para crecer
 
 ---
 
-# Sprint 17 — Validaciones, permisos funcionales y endurecimiento UX
+### Sprint 17 — Validaciones, permisos funcionales y endurecimiento UX
 
-## Objetivo
+Objetivo:
 
 Que el usuario no pueda romper la app ni meter basura alegremente.
 
-## Tablas implicadas
+Tablas implicadas:
 
 - base completa
 - audit log
 
-## Backend implicado
+Backend implicado:
 
 - services de validación
 - errores consistentes
 
-## Frontend implicado
+Frontend implicado:
 
 - formularios
 - guards de navegación
 - confirmaciones
 
-## Trabajo exacto
+Trabajo exacto:
 
 - validaciones de negocio
 - mensajes claros
@@ -1542,7 +1542,7 @@ Que el usuario no pueda romper la app ni meter basura alegremente.
 - confirmación de cambios
 - bloqueo de acciones destructivas
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero endurecer la UX y las validaciones funcionales del evaluador.
@@ -1556,36 +1556,36 @@ Tareas:
 6. Piensa en experiencia real de usuario de negocio.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - app más robusta
 - menos errores silenciosos
 
 ---
 
-# Sprint 18 — Tests, QA técnico y release 1.0
+### Sprint 18 — Tests, QA técnico y release 1.0
 
-## Objetivo
+Objetivo:
 
 Cerrar una versión que no sea humo.
 
-## Tablas implicadas
+Tablas implicadas:
 
 Todas.
 
-## Backend implicado
+Backend implicado:
 
 - tests repository
 - tests services
 - tests endpoints
 
-## Frontend implicado
+Frontend implicado:
 
 - tests stores
 - validación de tipos
 - lint
 
-## Trabajo exacto
+Trabajo exacto:
 
 - tests backend
 - test de migraciones
@@ -1595,7 +1595,7 @@ Todas.
 - build electron
 - build backend
 
-## Prompt GitHub Copilot
+Prompt GitHub Copilot:
 
 ```text
 Quiero preparar la release 1.0 de esta app Electron + Vue + Javalin + SQLite.
@@ -1608,7 +1608,7 @@ Tareas:
 5. Propón una checklist de release 1.0 concreta y segura.
 ```
 
-## Criterio de aceptación
+Criterio de aceptación:
 
 - build pasa
 - tests críticos pasan

@@ -1,5 +1,6 @@
 export { default as GenericDataTable } from './GenericDataTable.vue'
 export { default as GenericDataTableCountBar } from './GenericDataTableCountBar.vue'
+export { toBatchRequest } from './toBatchRequest'
 export { useGenericDataTableQuery } from './useGenericDataTableQuery'
 export { useGenericDataTableSelection } from './useGenericDataTableSelection'
 
@@ -41,6 +42,7 @@ export type {
   GenericDataTableRowClickHandler,
   GenericDataTableRowClickPayload,
   GenericDataTableSelectionChangeHandler,
+  GenericDataTableSelectionBatchPayload,
   GenericDataTableSelectionController,
   GenericDataTableSelectionMode,
   GenericDataTableSelectionOptions,

@@ -53,7 +53,7 @@
           text
           severity="secondary"
           :label="selectPageLabel"
-          :disabled="resolvedRows.length === 0"
+          :disabled="getSelectableRows(resolvedRows).length === 0"
           @click="onSelectAllPage"
         />
 
@@ -64,7 +64,8 @@
           text
           severity="secondary"
           :label="selectFilteredLabel"
-          :disabled="resolvedTotalRecords === 0"
+          :disabled="resolvedTotalRecords === 0 || !canSelectAllFiltered"
+          :title="selectAllFilteredDisabledReason || undefined"
           @click="onSelectAllFiltered"
         />
 
@@ -521,6 +522,9 @@ const props = withDefaults(
     showCountBar: false,
     countBarPosition: 'top',
     countBarShowShown: false,
+    disabledRowSelectionScope: 'visible',
+    disabledFilteredRowKeys: () => [],
+    disabledFilteredRowsResolved: false,
     showPaginator: true
   }
 )
@@ -582,6 +586,16 @@ const resolvedRows = computed(() =>
   isProviderMode.value ? providerState.rows.value : props.rows
 )
 
+const buildRowKey = (row: GenericDataTableRow): string => {
+  const value = row?.[props.rowKey]
+
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  return String(value)
+}
+
 const selectionEnabled = computed(() => props.selectionMode === 'multiple')
 
 const hasRowClickListener = computed(() => {
@@ -620,6 +634,92 @@ const resolvedBaselineTotal = computed(() => {
   return props.rows.length
 })
 
+const resolvedDisabledSelectionScope = computed(() => {
+  if (!props.rowDisabled) {
+    return 'none' as const
+  }
+
+  return props.disabledRowSelectionScope
+})
+
+const disabledVisibleRowKeys = computed(() => {
+  if (!props.rowDisabled) {
+    return []
+  }
+
+  return resolvedRows.value
+    .filter((row) => isRowDisabled(row))
+    .map((row) => buildRowKey(row))
+    .filter(Boolean)
+})
+
+const disabledSelectionKeys = computed(() => {
+  if (resolvedDisabledSelectionScope.value === 'filtered') {
+    return Array.from(
+      new Set([
+        ...props.disabledFilteredRowKeys,
+        ...disabledVisibleRowKeys.value
+      ])
+    )
+  }
+
+  return disabledVisibleRowKeys.value
+})
+
+const disabledRowsResolved = computed(() => {
+  if (resolvedDisabledSelectionScope.value === 'none') {
+    return true
+  }
+
+  if (resolvedDisabledSelectionScope.value === 'filtered') {
+    return props.disabledFilteredRowsResolved
+  }
+
+  return true
+})
+
+const canSelectAllFiltered = computed(() => {
+  if (!selectionEnabled.value) {
+    return false
+  }
+
+  if (!props.rowDisabled) {
+    return true
+  }
+
+  if (
+    isProviderMode.value &&
+    resolvedDisabledSelectionScope.value === 'visible'
+  ) {
+    return false
+  }
+
+  if (resolvedDisabledSelectionScope.value === 'filtered') {
+    return props.disabledFilteredRowsResolved
+  }
+
+  return true
+})
+
+const selectAllFilteredDisabledReason = computed(() => {
+  if (canSelectAllFiltered.value) {
+    return ''
+  }
+
+  if (
+    isProviderMode.value &&
+    resolvedDisabledSelectionScope.value === 'visible'
+  ) {
+    return 'Select filtered requires disabled rows resolved for the full filtered result in provider mode.'
+  }
+
+  if (resolvedDisabledSelectionScope.value === 'filtered') {
+    return 'Select filtered is blocked until disabledFilteredRowsResolved is true.'
+  }
+
+  return 'Select filtered is not available for the current selection configuration.'
+})
+
 const selectionState = useGenericDataTableSelection({
   visibleRows: resolvedRows,
   query: currentQuery,
@@ -627,6 +727,10 @@ const selectionState = useGenericDataTableSelection({
   baselineTotal: computed(() => resolvedBaselineTotal.value),
   rowKeyField: computed(() => props.rowKey),
   enabled: selectionEnabled,
+  disabledKeys: disabledSelectionKeys,
+  disabledRowsResolved,
+  rowDisabledSelectionScope: resolvedDisabledSelectionScope,
+  allowSelectAllFiltered: canSelectAllFiltered,
   onChange: (payload) => emit('selection-change', payload)
 })
 
@@ -726,9 +830,23 @@ const selectionSummary = computed(() => {
     return ''
   }
 
+  if (
+    props.rowDisabled &&
+    isProviderMode.value &&
+    resolvedDisabledSelectionScope.value === 'visible' &&
+    !selectionState.allFiltered.value
+  ) {
+    const selectedCount = selectionState.selectedCount.value ?? 0
+
+    if (selectedCount > 0) {
+      return `${selectedCount} rows selected (filtered-wide selection disabled while hidden disabled rows are unresolved)`
+    }
+  }
+
   if (selectionState.allFiltered.value) {
     const selectedCount = selectionState.selectedCount.value
     const excludedCount = selectionState.unselectedKeys.value.length
+    const disabledCount = selectionPayload.value?.disabledCount ?? 0
 
     if (selectedCount === null) {
       return excludedCount > 0
@@ -736,9 +854,12 @@ const selectionSummary = computed(() => {
         : 'All filtered rows selected'
     }
 
+    const disabledSuffix =
+      disabledCount > 0 ? `, ${disabledCount} disabled` : ''
+
     return excludedCount > 0
-      ? `${selectedCount} filtered rows selected (${excludedCount} excluded)`
-      : `${selectedCount} filtered rows selected`
+      ? `${selectedCount} filtered rows selected (${excludedCount} excluded${disabledSuffix})`
+      : `${selectedCount} filtered rows selected${disabledSuffix ? ` (${disabledCount} disabled)` : ''}`
   }
 
   const selectedCount = selectionState.selectedCount.value ?? 0

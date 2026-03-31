@@ -115,19 +115,35 @@ export interface GenericDataTableSelectionOverride<
   row?: Row
 }
 
+export interface GenericDataTableSelectionBatchPayload {
+  strategy: 'includeKeys' | 'filterQuery'
+  filterQuery: GenericDataTableQuery | null
+  includeKeys: string[]
+  excludeKeys: string[]
+  disabledKeys: string[]
+  ready: boolean
+  reason: string | null
+}
+
 export interface GenericDataTableSelectionPayload<
   Row extends GenericDataTableRow
 > {
   rowKeyField: string
   query: GenericDataTableQuery
   allFiltered: boolean
+  rowDisabledSelectionScope: 'none' | 'visible' | 'filtered'
+  disabledRowsResolved: boolean
   filteredTotal: number | null
   baselineTotal: number | null
+  disabledCount: number | null
+  selectableFilteredCount: number | null
   selectedCount: number | null
   visibleSelectedCount: number
   selectedRows: Row[]
   selectedKeys: string[]
+  disabledKeys: string[]
   unselectedKeys: string[]
+  batch: GenericDataTableSelectionBatchPayload
   overrides: Array<GenericDataTableSelectionOverride<Row>>
 }
 
@@ -185,6 +201,10 @@ export interface GenericDataTableSelectionOptions<
   baselineTotal: ComputedRef<number | null>
   rowKeyField: ComputedRef<string>
   enabled: ComputedRef<boolean>
+  disabledKeys: ComputedRef<string[]>
+  disabledRowsResolved: ComputedRef<boolean>
+  rowDisabledSelectionScope: ComputedRef<'none' | 'visible' | 'filtered'>
+  allowSelectAllFiltered: ComputedRef<boolean>
   onChange?: (payload: GenericDataTableSelectionPayload<Row>) => void
 }
 
@@ -289,6 +309,9 @@ export interface GenericDataTableProps<Row extends GenericDataTableRow> {
   countBarPosition?: 'top' | 'bottom' | 'both'
   countBarShowShown?: boolean
   rowDisabled?: boolean | ((row: Row) => boolean)
+  disabledRowSelectionScope?: 'visible' | 'filtered'
+  disabledFilteredRowKeys?: string[]
+  disabledFilteredRowsResolved?: boolean
   showPaginator?: boolean
   dataProvider?: GenericDataTableDataProvider<Row>
 }

@@ -76,6 +76,7 @@
 
 html {
   overflow: hidden;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -149,6 +150,7 @@ body {
   border-bottom: 1px solid var(--app-border);
   border-radius: 0;
   background: color-mix(in srgb, var(--app-surface-strong) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
 
@@ -191,7 +193,7 @@ body {
   gap: var(--app-space-2);
   min-height: 1.85rem;
   padding: 0 var(--app-space-3);
-  border-top: 1px solid color-mix(in srgb, var(--app-border) 70%, transparent);
+  border-top: 1px solid var(--app-border);
   background: color-mix(
     in srgb,
     var(--app-accent) 18%,
@@ -363,11 +365,7 @@ select {
 
 .app-list-item:hover {
   transform: translateY(-1px);
-  border-color: color-mix(
-    in srgb,
-    var(--app-border-strong) 65%,
-    var(--app-accent) 35%
-  );
+  border-color: var(--app-accent);
   box-shadow: var(--app-shadow-hover);
   background: var(--app-surface-strong);
 }
