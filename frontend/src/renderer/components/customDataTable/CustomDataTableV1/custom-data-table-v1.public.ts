@@ -3,13 +3,24 @@ export { useGenericDataTableQuery } from './useGenericDataTableQuery'
 
 export type {
   GenericDataTableAction,
+  GenericDataTableActionHandler,
   GenericDataTableActionPayload,
   GenericDataTableColumn,
   GenericDataTableColumnType,
+  GenericDataTableEmits,
+  GenericDataTableEventName,
   GenericDataTableFilterType,
   GenericDataTableFilterValue,
   GenericDataTableLoadResult,
   GenericDataTableOption,
+  GenericDataTablePrimeFilter,
+  GenericDataTablePrimeFilters,
+  GenericDataTableProps,
   GenericDataTableQuery,
-  GenericDataTableRow
+  GenericDataTableQueryChangeHandler,
+  GenericDataTableQueryController,
+  GenericDataTableRow,
+  GenericDataTableRowClickHandler,
+  GenericDataTableRowClickPayload,
+  GenericDataTableUpdateQueryPayload
 } from './generic-data-table.types'

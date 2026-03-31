@@ -1,3 +1,5 @@
+import type { ComputedRef, Ref } from 'vue'
+
 export type GenericDataTableRow = Record<string, unknown>
 
 export type GenericDataTableColumnType =
@@ -58,6 +60,28 @@ export interface GenericDataTableQuery {
   filters?: Record<string, GenericDataTableFilterValue>
 }
 
+export interface GenericDataTableProps<Row extends GenericDataTableRow> {
+  columns: Array<GenericDataTableColumn<Row>>
+  rows: Row[]
+  query?: GenericDataTableQuery
+  loading?: boolean
+  lazy?: boolean
+  rowKey?: string
+  totalRecords?: number
+  rowsPerPageOptions?: number[]
+  filterDisplay?: 'row' | 'menu'
+  showGridlines?: boolean
+  stripedRows?: boolean
+  rowHover?: boolean
+  emptyMessage?: string
+  loadingMessage?: string
+  globalFilterPlaceholder?: string
+  clearFiltersLabel?: string
+  showGlobalFilter?: boolean
+  showClearFilters?: boolean
+  showPaginator?: boolean
+}
+
 export interface GenericDataTableLoadResult<Row extends GenericDataTableRow> {
   rows: Row[]
   totalRecords: number
@@ -68,4 +92,56 @@ export interface GenericDataTableActionPayload<
 > {
   actionKey: string
   row: Row
+}
+
+export type GenericDataTableUpdateQueryPayload = GenericDataTableQuery
+
+export type GenericDataTableRowClickPayload<Row extends GenericDataTableRow> =
+  Row
+
+export type GenericDataTableEventName = 'update:query' | 'row-click' | 'action'
+
+export interface GenericDataTableEmits<Row extends GenericDataTableRow> {
+  (event: 'update:query', payload: GenericDataTableUpdateQueryPayload): void
+  (event: 'row-click', payload: GenericDataTableRowClickPayload<Row>): void
+  (event: 'action', payload: GenericDataTableActionPayload<Row>): void
+}
+
+export type GenericDataTableQueryChangeHandler = (
+  payload: GenericDataTableUpdateQueryPayload
+) => void
+
+export type GenericDataTableRowClickHandler<Row extends GenericDataTableRow> = (
+  payload: GenericDataTableRowClickPayload<Row>
+) => void
+
+export type GenericDataTableActionHandler<Row extends GenericDataTableRow> = (
+  payload: GenericDataTableActionPayload<Row>
+) => void
+
+export interface GenericDataTablePrimeFilter {
+  value: GenericDataTableFilterValue
+  matchMode: 'contains' | 'equals'
+}
+
+export type GenericDataTablePrimeFilters = Record<
+  string,
+  GenericDataTablePrimeFilter
+>
+
+export interface GenericDataTableQueryController {
+  normalizedQuery: Ref<GenericDataTableQuery>
+  primeFilters: Ref<GenericDataTablePrimeFilters>
+  first: ComputedRef<number>
+  currentQuery: ComputedRef<GenericDataTableQuery>
+  setPage: (page: number, size: number) => GenericDataTableQuery
+  setSort: (
+    sortField: string | null,
+    sortOrder: 1 | -1
+  ) => GenericDataTableQuery
+  setFilterValue: (
+    field: string,
+    value: GenericDataTableFilterValue
+  ) => GenericDataTableQuery
+  clearFilters: () => GenericDataTableQuery
 }

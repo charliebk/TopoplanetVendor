@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue'
 import type {
   GenericDataTableColumn,
   GenericDataTableFilterValue,
+  GenericDataTableQueryController,
   GenericDataTableQuery,
   GenericDataTableRow
 } from './generic-data-table.types'
@@ -69,7 +70,7 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
   columns: Array<GenericDataTableColumn<Row>>,
   query: GenericDataTableQuery | undefined,
   defaultRows: number
-) => {
+): GenericDataTableQueryController => {
   const normalizedQuery = ref<GenericDataTableQuery>({
     page: query?.page ?? 0,
     size: query?.size ?? defaultRows,

@@ -40,6 +40,37 @@ import {
 } from './CustomDataTableV1/custom-data-table-v1.public'
 ```
 
+## Superficie publica congelada en Sprint 1
+
+Durante Sprint 1, la API publica de V1 queda definida asi:
+
+- Componente: `GenericDataTable`.
+- Helper publico: `useGenericDataTableQuery`.
+- Tipos de modelo: `GenericDataTableRow`, `GenericDataTableColumn`, `GenericDataTableQuery`, `GenericDataTableOption`, `GenericDataTableAction`.
+- Tipos de componente: `GenericDataTableProps`, `GenericDataTableEmits`, `GenericDataTableEventName`.
+- Tipos de eventos: `GenericDataTableUpdateQueryPayload`, `GenericDataTableRowClickPayload`, `GenericDataTableActionPayload`.
+- Helpers tipados: `GenericDataTableQueryController`, `GenericDataTableQueryChangeHandler`, `GenericDataTableRowClickHandler`, `GenericDataTableActionHandler`.
+
+Todo consumo externo debe importar solo desde `custom-data-table-v1.public.ts`.
+
+## Compatibilidad esperada con PrimeVue
+
+Compatibilidad esperada para esta V1:
+
+- PrimeVue DataTable con `paginator`, `lazy`, `filters`, `row-click`, `page` y `sort`.
+- PrimeVue Column con `body` y `filter` slots.
+- PrimeVue Button para acciones por fila y boton de limpiar filtros.
+- PrimeVue InputText para filtro global y filtros de texto.
+- PrimeVue InputNumber para filtros numericos.
+- PrimeVue Dropdown para filtros booleanos y select.
+- PrimeVue Tag para render booleano basico.
+
+Compatibilidad asumida por implementacion actual:
+
+- API de PrimeVue alineada con el uso ya presente en este proyecto.
+- Componentes disponibles como imports por modulo, no solo por registro global.
+- El consumidor decide si usa client-side o server-side; la tabla no acopla stores ni cliente HTTP.
+
 ## Contrato minimo del componente
 
 ### Props principales
@@ -61,13 +92,85 @@ import {
 
 La tabla esta pensada como componente controlado: el padre mantiene la query, escucha `update:query` y recarga datos.
 
+### Ejemplo minimo de consumo controlado
+
+Este caso usa la tabla como componente controlado sin `lazy`; el padre conserva la query publica, pero las filas ya viven en memoria.
+
+```vue
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import {
+  GenericDataTable,
+  type GenericDataTableColumn,
+  type GenericDataTableQuery,
+  type GenericDataTableQueryChangeHandler
+} from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
+
+type DemoRow = {
+  id: number
+  code: string
+  name: string
+  enabled: boolean
+}
+
+const query = ref<GenericDataTableQuery>({
+  page: 0,
+  size: 10,
+  sortField: 'name',
+  sortOrder: 1,
+  globalFilter: null,
+  filters: {}
+})
+
+const sourceRows = ref<DemoRow[]>([
+  { id: 1, code: 'CAT', name: 'Category', enabled: true },
+  { id: 2, code: 'REQ', name: 'Requirement', enabled: false }
+])
+
+const columns: Array<GenericDataTableColumn<DemoRow>> = [
+  { field: 'code', header: 'Code', sortable: true, filterable: true },
+  { field: 'name', header: 'Name', sortable: true, filterable: true },
+  {
+    field: 'enabled',
+    header: 'Enabled',
+    type: 'boolean',
+    filterable: true,
+    align: 'center'
+  }
+]
+
+const visibleRows = computed(() => sourceRows.value)
+
+const onQueryChange: GenericDataTableQueryChangeHandler = (nextQuery) => {
+  query.value = nextQuery
+}
+</script>
+
+<template>
+  <GenericDataTable
+    :columns="columns"
+    :rows="visibleRows"
+    :query="query"
+    :loading="false"
+    @update:query="onQueryChange"
+  />
+</template>
+```
+
+### Ejemplo minimo de lazy loading
+
+Este caso usa `lazy` para delegar al padre la carga remota. Es el patron recomendado para vistas con backend paginado.
+
 ```vue
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import {
   GenericDataTable,
+  type GenericDataTableActionHandler,
+  type GenericDataTableActionPayload,
   type GenericDataTableColumn,
-  type GenericDataTableQuery
+  type GenericDataTableQuery,
+  type GenericDataTableQueryChangeHandler
 } from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
 
 type CategoryRow = {
@@ -137,12 +240,9 @@ async function loadData() {
   }
 }
 
-function onQueryChange(nextQuery: GenericDataTableQuery) {
-  query.value = nextQuery
-  void loadData()
-}
-
-function onAction(payload: { actionKey: string; row: CategoryRow }) {
+const onAction: GenericDataTableActionHandler<CategoryRow> = (
+  payload: GenericDataTableActionPayload<CategoryRow>
+) => {
   if (payload.actionKey === 'edit') {
     return
   }
@@ -150,6 +250,11 @@ function onAction(payload: { actionKey: string; row: CategoryRow }) {
   if (payload.actionKey === 'delete') {
     return
   }
+}
+
+const onLazyQueryChange: GenericDataTableQueryChangeHandler = (nextQuery) => {
+  query.value = nextQuery
+  void loadData()
 }
 
 onMounted(() => {
@@ -165,7 +270,7 @@ onMounted(() => {
     :loading="loading"
     :lazy="true"
     :total-records="totalRecords"
-    @update:query="onQueryChange"
+    @update:query="onLazyQueryChange"
     @action="onAction"
   />
 </template>
@@ -191,3 +296,7 @@ Para copiarlo a otro proyecto sin deuda innecesaria:
 ## Limites actuales de V1
 
 Esta version todavia no cubre toda la funcionalidad del componente original. La hoja de trabajo para cerrar esa brecha esta en `ORIGINAL_PARITY_SPRINTS.md`.
+
+## Regla de cierre de Sprint 1
+
+Si un consumidor necesita importar algo desde `GenericDataTable.vue`, `generic-data-table.types.ts` o `useGenericDataTableQuery.ts`, entonces Sprint 1 no esta realmente cerrado. El contrato publico valido es solo `custom-data-table-v1.public.ts`.

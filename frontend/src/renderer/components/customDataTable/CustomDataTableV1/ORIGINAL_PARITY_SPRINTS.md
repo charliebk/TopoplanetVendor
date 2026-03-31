@@ -17,6 +17,8 @@ El objetivo no es copiar la implementacion legacy, sino cubrir sus requisitos co
 
 Objetivo: congelar el contrato que otro proyecto va a importar.
 
+Estado actual: completado.
+
 Entregables:
 
 - Definir que exports forman parte de la API publica.
@@ -27,6 +29,13 @@ Entregables:
 Criterio de cierre:
 
 - Cualquier consumidor importa solo desde `custom-data-table-v1.public.ts`.
+
+Resultado aplicado en el modulo:
+
+- Existe un punto de entrada publico unico: `custom-data-table-v1.public.ts`.
+- Los tipos publicos de props, eventos, payloads y helpers ya tienen nombres estables.
+- El README documenta la compatibilidad esperada con PrimeVue.
+- El README incluye ejemplo minimo de consumo controlado y ejemplo minimo de lazy loading.
 
 ## Sprint 2. Paridad del modelo de columnas
 
