@@ -30,10 +30,40 @@ CREATE TABLE IF NOT EXISTS coreLog (
   FOREIGN KEY (core_type_log_id) REFERENCES coreTypeLog(id)
 );
 
+CREATE TABLE IF NOT EXISTS category (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  core_project_id INTEGER NOT NULL,
+  code TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  factor REAL NOT NULL DEFAULT 1.0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (core_project_id) REFERENCES coreProject(id),
+  UNIQUE (core_project_id, code)
+);
+
+CREATE TABLE IF NOT EXISTS requirementLevel (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  core_project_id INTEGER NOT NULL,
+  code TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  factor REAL NOT NULL DEFAULT 1.0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (core_project_id) REFERENCES coreProject(id),
+  UNIQUE (core_project_id, code)
+);
+
 CREATE INDEX IF NOT EXISTS idx_coreProject_active ON coreProject(is_deleted);
 CREATE INDEX IF NOT EXISTS idx_coreLog_coreProject ON coreLog(core_project_id);
 CREATE INDEX IF NOT EXISTS idx_coreLog_coreTypeLog ON coreLog(core_type_log_id);
 CREATE INDEX IF NOT EXISTS idx_coreLog_project_happenedAt ON coreLog(core_project_id, happened_at_utc);
+CREATE INDEX IF NOT EXISTS idx_category_coreProject ON category(core_project_id);
+CREATE INDEX IF NOT EXISTS idx_category_project_code ON category(core_project_id, code);
+CREATE INDEX IF NOT EXISTS idx_requirementLevel_coreProject ON requirementLevel(core_project_id);
+CREATE INDEX IF NOT EXISTS idx_requirementLevel_project_code ON requirementLevel(core_project_id, code);
 
 INSERT INTO coreTypeLog (code, name, description)
 VALUES

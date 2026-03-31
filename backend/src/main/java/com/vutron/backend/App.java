@@ -6,9 +6,11 @@ import com.vutron.backend.controller.ControllerRegister;
 import com.vutron.backend.db.DatabaseSchemaManager;
 import com.vutron.backend.io.coreproject.Export.Controller.ExportCoreProjectController;
 import com.vutron.backend.io.coreproject.Import.Controller.ImportCoreProjectController;
+import com.vutron.backend.manager.category.Controller.CategoryController;
 import com.vutron.backend.manager.corelog.Controller.CoreLogController;
 import com.vutron.backend.manager.coreproject.Controller.CoreProjectController;
 import com.vutron.backend.manager.coretypelog.Controller.CoreTypeLogController;
+import com.vutron.backend.manager.requirementlevel.Controller.RequirementLevelController;
 import io.javalin.Javalin;
 
 import javax.sql.DataSource;
@@ -153,6 +155,70 @@ public final class App {
         new CoreLogController().register(
             ControllerRegister.EndpointType.DELETE,
             "/api/core-log/{id}",
+            app,
+            dataSource
+        );
+
+        // category
+        new CategoryController().register(
+            ControllerRegister.EndpointType.GET,
+            "/api/categories",
+            app,
+            dataSource
+        );
+        new CategoryController().register(
+            ControllerRegister.EndpointType.GET,
+            "/api/category/{id}",
+            app,
+            dataSource
+        );
+        new CategoryController().register(
+            ControllerRegister.EndpointType.POST,
+            "/api/category",
+            app,
+            dataSource
+        );
+        new CategoryController().register(
+            ControllerRegister.EndpointType.PUT,
+            "/api/category/{id}",
+            app,
+            dataSource
+        );
+        new CategoryController().register(
+            ControllerRegister.EndpointType.DELETE,
+            "/api/category/{id}",
+            app,
+            dataSource
+        );
+
+        // requirement level
+        new RequirementLevelController().register(
+            ControllerRegister.EndpointType.GET,
+            "/api/requirement-levels",
+            app,
+            dataSource
+        );
+        new RequirementLevelController().register(
+            ControllerRegister.EndpointType.GET,
+            "/api/requirement-level/{id}",
+            app,
+            dataSource
+        );
+        new RequirementLevelController().register(
+            ControllerRegister.EndpointType.POST,
+            "/api/requirement-level",
+            app,
+            dataSource
+        );
+        new RequirementLevelController().register(
+            ControllerRegister.EndpointType.PUT,
+            "/api/requirement-level/{id}",
+            app,
+            dataSource
+        );
+        new RequirementLevelController().register(
+            ControllerRegister.EndpointType.DELETE,
+            "/api/requirement-level/{id}",
             app,
             dataSource
         );

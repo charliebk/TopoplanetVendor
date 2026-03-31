@@ -1,0 +1,183 @@
+# Original Parity Sprints
+
+## Alcance
+
+Esta lista convierte la brecha entre `CustomDataTableV1` y el componente original heredado en sprints concretos. La referencia funcional es el conjunto formado por:
+
+- `CustomDataTable.vue`
+- `datatable-types.ts`
+- `useDataTableBase.ts`
+- `useDataTableCommon.ts`
+- `useTableSelection.ts`
+- `ListingCountBar.vue`
+
+El objetivo no es copiar la implementacion legacy, sino cubrir sus requisitos con una API mas limpia y portable.
+
+## Sprint 1. Cerrar la API publica de V1
+
+Objetivo: congelar el contrato que otro proyecto va a importar.
+
+Entregables:
+
+- Definir que exports forman parte de la API publica.
+- Introducir nombres estables para tipos, eventos y helpers.
+- Documentar compatibilidad esperada con PrimeVue.
+- Anadir ejemplos minimos de consumo controlado y lazy loading.
+
+Criterio de cierre:
+
+- Cualquier consumidor importa solo desde `custom-data-table-v1.public.ts`.
+
+## Sprint 2. Paridad del modelo de columnas
+
+Objetivo: cubrir la riqueza del `ColumnDef` original sin heredar su complejidad completa.
+
+Entregables:
+
+- Soporte para tipos adicionales: `integer`, `date`, `percent`, `idIcon`, `list`.
+- Soporte para `displayField`, `backendField`, `minWidth`, `maxWidth`.
+- Soporte para `tooltipField` e `idIconClass`.
+- Estrategia clara de compatibilidad entre `type`, `filterType` y renderizado.
+
+Criterio de cierre:
+
+- La mayoria de columnas del componente original puede declararse sin adaptadores externos.
+
+## Sprint 3. Paridad del sistema de filtros
+
+Objetivo: igualar la flexibilidad funcional del filtrado original.
+
+Entregables:
+
+- Soporte para `matchMode` ampliado: `startsWith`, `endsWith`, `equals`, `contains`.
+- Sincronizacion estable entre query externa y filtros internos.
+- `paramTransform` por columna para traducir filtros al backend.
+- Filtros de fecha y lista con contrato reutilizable.
+- Limpieza total de filtros y emision consistente del estado filtrado.
+
+Criterio de cierre:
+
+- Un consumidor puede expresar filtros de backend sin parches en la vista contenedora.
+
+## Sprint 4. Capa de proveedor de datos
+
+Objetivo: evitar que cada pantalla reinvente la carga remota.
+
+Entregables:
+
+- Definir interfaz de `dataProvider` asincrono para V1.
+- Normalizar respuestas tipo `rows + total + overallTotal`.
+- Normalizar estados de fallo sin acoplarse a stores concretos.
+- Incorporar baseline total para distinguir total filtrado vs total global.
+
+Criterio de cierre:
+
+- La tabla puede operar en modo controlado actual y en modo provider sin duplicar logica de carga.
+
+## Sprint 5. Seleccion avanzada
+
+Objetivo: recuperar la capacidad que hoy aporta `useTableSelection.ts`.
+
+Entregables:
+
+- Seleccion simple por fila.
+- Seleccion masiva de pagina actual.
+- `select all filtered` con overrides por fila.
+- Payload estable de seleccion para backend batch operations.
+- API para refrescar la seleccion al cambiar las filas visibles.
+
+Criterio de cierre:
+
+- Las operaciones masivas pueden ejecutarse sin perder el contexto de seleccion filtrada.
+
+## Sprint 6. Toolbar y componentes auxiliares
+
+Objetivo: recuperar piezas de UX del original sin contaminar el core.
+
+Entregables:
+
+- Barra superior extensible con slots para acciones del consumidor.
+- Contador de listado tipo `ListingCountBar` desacoplado.
+- Mensajes parametrizables de empty/loading/error.
+- Botones opcionales para clear filters, refresh y acciones globales.
+
+Criterio de cierre:
+
+- El consumidor no necesita envolver la tabla con otra toolbar para casos comunes.
+
+## Sprint 7. Acciones, filas y accesibilidad
+
+Objetivo: completar el comportamiento interactivo que el original esperaba.
+
+Entregables:
+
+- Tooltips por accion.
+- Clases visuales por accion.
+- Politica clara de click en fila vs click en accion.
+- Estados disabled por accion y por fila.
+- Ajustes minimos de accesibilidad para controles y etiquetas booleanas.
+
+Criterio de cierre:
+
+- Las columnas de acciones cubren el mismo rango funcional que `ColumnAction` del original.
+
+## Sprint 8. Exportacion e impresion
+
+Objetivo: recuperar una de las capacidades declaradas en los tipos legacy.
+
+Entregables:
+
+- `exportable`, `exportHeader`, `exportKey`, `exportFormat` por columna.
+- API publica para exportar CSV y preparar impresion.
+- Exclusion automatica de columnas de acciones.
+
+Criterio de cierre:
+
+- Una pantalla puede exportar sin reimplementar mapeo de columnas.
+
+## Sprint 9. Opciones dinamicas para columnas tipo lista
+
+Objetivo: cubrir el caso de filtros de listas remotas o cargadas por store.
+
+Entregables:
+
+- `optionItemsProvider` equivalente en V1.
+- Mapeo configurable con `optionLabelField`, `optionValueField`, `optionTransform`.
+- `includeAllOption` e `includeAllLabel`.
+- Estrategia de recarga cuando las opciones dependen de otro store o query.
+
+Criterio de cierre:
+
+- Las columnas tipo lista funcionan sin que la pantalla tenga que preprocesar todas las opciones manualmente.
+
+## Sprint 10. Endurecimiento para reutilizacion real
+
+Objetivo: dejar el modulo listo para copiarse entre proyectos con bajo riesgo.
+
+Entregables:
+
+- Tests unitarios de tipos, query y acciones.
+- Uno o dos ejemplos reales en vistas del proyecto.
+- Checklist de portabilidad entre proyectos.
+- Politica de versionado interno para futuras evoluciones de V1.
+
+Criterio de cierre:
+
+- El modulo puede copiarse a otro proyecto con una receta corta y verificable.
+
+## Orden recomendado
+
+Orden de implementacion sugerido:
+
+1. Sprint 1
+2. Sprint 2
+3. Sprint 3
+4. Sprint 4
+5. Sprint 5
+6. Sprint 6
+7. Sprint 7
+8. Sprint 9
+9. Sprint 8
+10. Sprint 10
+
+La razon de ese orden es que exportacion, seleccion y toolbar dependen de cerrar antes el contrato de columnas, filtros y carga de datos.
