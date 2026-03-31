@@ -5,6 +5,19 @@
       class="generic-data-table__toolbar"
     >
       <div class="generic-data-table__toolbar-main">
+        <slot
+          name="toolbar-main"
+          :query="currentQuery"
+          :rows="resolvedRows"
+          :filtered-total="resolvedTotalRecords"
+          :baseline-total="resolvedBaselineTotal"
+          :has-filters="hasActiveFilters"
+          :selection="selectionPayload"
+          :clear-filters="onClearFilters"
+          :clear-selection="onClearSelection"
+          :refresh="onRefresh"
+        ></slot>
+
         <PrimeInputText
           v-if="showGlobalFilter"
           :model-value="globalFilterValue"
@@ -22,6 +35,17 @@
       </div>
 
       <div class="generic-data-table__toolbar-actions">
+        <PrimeButton
+          v-if="showRefreshButton"
+          type="button"
+          icon="pi pi-refresh"
+          text
+          severity="secondary"
+          :label="refreshLabel"
+          :disabled="resolvedLoading"
+          @click="void onRefresh()"
+        />
+
         <PrimeButton
           v-if="showSelectionToolbar"
           type="button"
@@ -64,8 +88,47 @@
           :label="clearFiltersLabel"
           @click="onClearFilters"
         />
+
+        <slot
+          name="toolbar-actions"
+          :query="currentQuery"
+          :rows="resolvedRows"
+          :filtered-total="resolvedTotalRecords"
+          :baseline-total="resolvedBaselineTotal"
+          :has-filters="hasActiveFilters"
+          :selection="selectionPayload"
+          :clear-filters="onClearFilters"
+          :clear-selection="onClearSelection"
+          :refresh="onRefresh"
+        ></slot>
       </div>
     </div>
+
+    <GenericDataTableCountBar
+      v-if="showCountBarTop"
+      class="generic-data-table__count-bar"
+      :baseline-total="resolvedBaselineTotal"
+      :filtered-total="resolvedTotalRecords"
+      :shown="resolvedRows.length"
+      :has-filters="hasActiveFilters"
+      :show-shown="countBarShowShown"
+      :show-clear-filters-button="false"
+      :clear-filters-label="clearFiltersLabel"
+    >
+      <slot
+        name="count-bar"
+        :query="currentQuery"
+        :rows="resolvedRows"
+        :filtered-total="resolvedTotalRecords"
+        :baseline-total="resolvedBaselineTotal"
+        :shown="resolvedRows.length"
+        :has-filters="hasActiveFilters"
+        :selection="selectionPayload"
+        :clear-filters="onClearFilters"
+        :clear-selection="onClearSelection"
+        :refresh="onRefresh"
+      ></slot>
+    </GenericDataTableCountBar>
 
     <DataTable
       :value="resolvedRows"
@@ -294,22 +357,74 @@
       </template>
 
       <template #empty>
-        <div class="generic-data-table__state-message">
-          {{ resolvedEmptyMessage }}
-        </div>
+        <slot
+          v-if="providerState.error.value"
+          name="error"
+          :query="currentQuery"
+          :message="resolvedErrorMessage"
+          :error="providerState.error.value"
+        >
+          <div class="generic-data-table__state-message">
+            {{ resolvedErrorMessage }}
+          </div>
+        </slot>
+
+        <slot
+          v-else
+          name="empty"
+          :query="currentQuery"
+          :rows="resolvedRows"
+          :message="resolvedEmptyMessage"
+        >
+          <div class="generic-data-table__state-message">
+            {{ resolvedEmptyMessage }}
+          </div>
+        </slot>
       </template>
 
       <template #loading>
-        <div class="generic-data-table__state-message">
-          {{ resolvedLoadingMessage }}
-        </div>
+        <slot
+          name="loading"
+          :query="currentQuery"
+          :message="resolvedLoadingMessage"
+        >
+          <div class="generic-data-table__state-message">
+            {{ resolvedLoadingMessage }}
+          </div>
+        </slot>
       </template>
     </DataTable>
+
+    <GenericDataTableCountBar
+      v-if="showCountBarBottom"
+      class="generic-data-table__count-bar"
+      :baseline-total="resolvedBaselineTotal"
+      :filtered-total="resolvedTotalRecords"
+      :shown="resolvedRows.length"
+      :has-filters="hasActiveFilters"
+      :show-shown="countBarShowShown"
+      :show-clear-filters-button="false"
+      :clear-filters-label="clearFiltersLabel"
+    >
+      <slot
+        name="count-bar"
+        :query="currentQuery"
+        :rows="resolvedRows"
+        :filtered-total="resolvedTotalRecords"
+        :baseline-total="resolvedBaselineTotal"
+        :shown="resolvedRows.length"
+        :has-filters="hasActiveFilters"
+        :selection="selectionPayload"
+        :clear-filters="onClearFilters"
+        :clear-selection="onClearSelection"
+        :refresh="onRefresh"
+      ></slot>
+    </GenericDataTableCountBar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 import DataTable, {
   type DataTablePageEvent,
   type DataTableRowClickEvent,
@@ -323,6 +438,7 @@ import PrimeDropdown from 'primevue/dropdown'
 import PrimeInputNumber from 'primevue/inputnumber'
 import PrimeInputText from 'primevue/inputtext'
 import PrimeTag from 'primevue/tag'
+import GenericDataTableCountBar from './GenericDataTableCountBar.vue'
 import type {
   GenericDataTableAction,
   GenericDataTableActionPayload,
@@ -333,6 +449,7 @@ import type {
   GenericDataTableProviderErrorPayload,
   GenericDataTableProps,
   GenericDataTableQuery,
+  GenericDataTableRefreshPayload,
   GenericDataTableRow,
   GenericDataTableSelectionPayload
 } from './generic-data-table.types'
@@ -363,17 +480,25 @@ const props = withDefaults(
     rowHover: true,
     emptyMessage: 'No data available',
     loadingMessage: 'Loading data...',
+    errorMessage: 'Failed to load data',
     globalFilterPlaceholder: 'Filter all columns',
     clearFiltersLabel: 'Clear filters',
+    refreshLabel: 'Refresh',
     selectPageLabel: 'Select page',
     selectFilteredLabel: 'Select filtered',
     clearSelectionLabel: 'Clear selection',
     showGlobalFilter: true,
     showClearFilters: true,
+    showRefreshButton: false,
     showSelectionToolbar: true,
+    showCountBar: false,
+    countBarPosition: 'top',
+    countBarShowShown: false,
     showPaginator: true
   }
 )
+
+const slots = useSlots()
 
 const emit = defineEmits<{
   (event: 'update:query', payload: GenericDataTableQuery): void
@@ -386,6 +511,7 @@ const emit = defineEmits<{
     event: 'load',
     payload: GenericDataTableLoadPayload<GenericDataTableRow>
   ): void
+  (event: 'refresh', payload: GenericDataTableRefreshPayload): void
   (
     event: 'selection-change',
     payload: GenericDataTableSelectionPayload<GenericDataTableRow>
@@ -472,31 +598,88 @@ const selectionState = useGenericDataTableSelection({
   onChange: (payload) => emit('selection-change', payload)
 })
 
-const resolvedEmptyMessage = computed(() => {
-  if (providerState.error.value) {
-    return providerState.error.value.message
+const selectionPayload = computed(() => {
+  if (!selectionEnabled.value) {
+    return null
   }
 
+  return selectionState.getSelectionPayload()
+})
+
+const resolvedEmptyMessage = computed(() => {
   return props.emptyMessage
 })
 
+const resolvedErrorMessage = computed(() => {
+  if (!providerState.error.value) {
+    return props.errorMessage
+  }
+
+  return providerState.error.value.message || props.errorMessage
+})
+
 const resolvedLoadingMessage = computed(() => props.loadingMessage)
+
+const hasActiveFilters = computed(() => {
+  if (currentQuery.value.globalFilter?.trim()) {
+    return true
+  }
+
+  return Object.values(currentQuery.value.filters ?? {}).some((value) => {
+    if (value === null || value === undefined) {
+      return false
+    }
+
+    if (typeof value === 'string') {
+      return value.trim().length > 0
+    }
+
+    return true
+  })
+})
 
 const globalFilterValue = computed(() => {
   const value = primeFilters.value.global?.value
   return typeof value === 'string' ? value : ''
 })
 
+const hasToolbarMainSlot = computed(() => Boolean(slots['toolbar-main']))
+
+const hasToolbarActionsSlot = computed(() => Boolean(slots['toolbar-actions']))
+
+const hasCountBarSlot = computed(() => Boolean(slots['count-bar']))
+
 const showToolbar = computed(
   () =>
     props.showGlobalFilter ||
     props.showClearFilters ||
-    showSelectionToolbar.value
+    props.showRefreshButton ||
+    showSelectionToolbar.value ||
+    hasToolbarMainSlot.value ||
+    hasToolbarActionsSlot.value
 )
 
 const showSelectionToolbar = computed(
   () => selectionEnabled.value && props.showSelectionToolbar
 )
+
+const showRefreshButton = computed(() => props.showRefreshButton)
+
+const showCountBar = computed(() => props.showCountBar || hasCountBarSlot.value)
+
+const showCountBarTop = computed(() => {
+  return (
+    showCountBar.value &&
+    (props.countBarPosition === 'top' || props.countBarPosition === 'both')
+  )
+})
+
+const showCountBarBottom = computed(() => {
+  return (
+    showCountBar.value &&
+    (props.countBarPosition === 'bottom' || props.countBarPosition === 'both')
+  )
+})
 
 const hasSelection = computed(() => {
   if (selectionState.allFiltered.value) {
@@ -776,6 +959,17 @@ const onClearFilters = (): void => {
   emit('update:query', clearFilters())
 }
 
+const onRefresh = async (): Promise<void> => {
+  emit('refresh', {
+    query: currentQuery.value,
+    providerMode: isProviderMode.value
+  })
+
+  if (isProviderMode.value) {
+    await providerState.reload()
+  }
+}
+
 const onRowSelectionChange = (
   row: GenericDataTableRow,
   value: boolean | null | undefined
@@ -813,7 +1007,9 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
   selectAllFiltered: (rows) => selectionState.selectAllFiltered(rows),
   clearSelection: () => selectionState.clearSelection(),
   refreshVisibleRows: (rows) => selectionState.refreshVisibleRows(rows),
-  getSelectionPayload: () => selectionState.getSelectionPayload()
+  getSelectionPayload: () => selectionState.getSelectionPayload(),
+  refresh: () => onRefresh(),
+  clearFilters: () => onClearFilters()
 })
 </script>
 
@@ -853,6 +1049,10 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
 .generic-data-table__selection-summary {
   color: var(--app-text-muted);
   font-size: 0.9rem;
+}
+
+.generic-data-table__count-bar {
+  margin: 0;
 }
 
 .generic-data-table__filter-cell {

@@ -1,4 +1,5 @@
 export { default as GenericDataTable } from './GenericDataTable.vue'
+export { default as GenericDataTableCountBar } from './GenericDataTableCountBar.vue'
 export { useGenericDataTableQuery } from './useGenericDataTableQuery'
 export { useGenericDataTableSelection } from './useGenericDataTableSelection'
 
@@ -8,6 +9,8 @@ export type {
   GenericDataTableActionPayload,
   GenericDataTableColumn,
   GenericDataTableColumnType,
+  GenericDataTableCountBarProps,
+  GenericDataTableCountBarSlotPayload,
   GenericDataTableDataProvider,
   GenericDataTableEmits,
   GenericDataTableEventName,
@@ -26,6 +29,8 @@ export type {
   GenericDataTableProviderFailure,
   GenericDataTableProviderRequest,
   GenericDataTableProviderResult,
+  GenericDataTableRefreshHandler,
+  GenericDataTableRefreshPayload,
   GenericDataTableProviderState,
   GenericDataTableProviderSuccess,
   GenericDataTableQuery,
@@ -43,5 +48,6 @@ export type {
   GenericDataTableSelectionOverrideMode,
   GenericDataTableSelectionPayload,
   GenericDataTableSelectionState,
+  GenericDataTableToolbarSlotPayload,
   GenericDataTableUpdateQueryPayload
 } from './generic-data-table.types'

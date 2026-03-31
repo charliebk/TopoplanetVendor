@@ -9,6 +9,7 @@ La intencion de esta carpeta es que pueda copiarse a otro proyecto sin arrastrar
 ## Archivos del modulo
 
 - `GenericDataTable.vue`: componente visual principal.
+- `GenericDataTableCountBar.vue`: contador desacoplado reutilizable para listados.
 - `useGenericDataTableQuery.ts`: normalizacion de query y traduccion a filtros de PrimeVue.
 - `useGenericDataTableSelection.ts`: seleccion avanzada con `select all filtered`, overrides y payload estable.
 - `generic-data-table.types.ts`: tipos publicos del modulo.
@@ -19,7 +20,7 @@ La intencion de esta carpeta es que pueda copiarse a otro proyecto sin arrastrar
 Antes de copiar la carpeta, el proyecto destino necesita:
 
 - Vue 3 con `<script setup lang="ts">`.
-- PrimeVue con estos componentes disponibles: `DataTable`, `Column`, `Button`, `Checkbox`, `Dropdown`, `InputNumber`, `InputText`, `Tag`.
+- PrimeVue con estos componentes disponibles: `DataTable`, `Column`, `Button`, `Checkbox`, `Dropdown`, `InputNumber`, `InputText`, `Tag`, `Calendar`.
 - Variables CSS equivalentes o compatibles con:
   - `--app-space-3`
   - `--app-space-4`
@@ -34,6 +35,7 @@ Importa siempre desde `custom-data-table-v1.public.ts` para que la carpeta tenga
 ```ts
 import {
   GenericDataTable,
+  GenericDataTableCountBar,
   useGenericDataTableSelection,
   useGenericDataTableQuery,
   type GenericDataTableColumn,
@@ -92,6 +94,7 @@ Compatibilidad asumida por implementacion actual:
 - `action`: emite `{ actionKey, row }` para columnas de acciones.
 - `load`: emite `{ query, rows, totalRecords, overallTotal, baselineTotal }` al resolver un `dataProvider`.
 - `provider-error`: emite `{ query, message, cause }` cuando falla un `dataProvider`.
+- `refresh`: emite `{ query, providerActive }` al usar el boton integrado de refresh o la API expuesta.
 - `selection-change`: emite un payload estable para operaciones batch con `query`, `allFiltered`, `selectedKeys`, `unselectedKeys`, `selectedCount` y `selectedRows` visibles/materializados.
 
 ### Props de seleccion
@@ -99,6 +102,20 @@ Compatibilidad asumida por implementacion actual:
 - `selectionMode`: `none` o `multiple`.
 - `showSelectionToolbar`: muestra acciones de seleccionar pagina, seleccionar filtrado y limpiar seleccion.
 - `selectPageLabel`, `selectFilteredLabel`, `clearSelectionLabel`: textos de los controles de seleccion.
+
+### Props de toolbar y estados
+
+- `showRefreshButton`, `refreshLabel`: boton integrado de recarga.
+- `showCountBar`, `countBarPosition`, `countBarShowShown`: contador desacoplado arriba, abajo o en ambos extremos.
+- `emptyMessage`, `loadingMessage`, `errorMessage`: mensajes parametrizables para estados comunes.
+- `showClearFiltersButton`, `clearFiltersLabel`: limpieza integrada de filtros.
+
+### Slots de extension
+
+- `toolbar-main`: contenido adicional junto al filtro global y resumen de seleccion.
+- `toolbar-actions`: acciones globales del consumidor en la barra superior.
+- `count-bar`: contenido adicional dentro del contador desacoplado.
+- `empty`, `loading`, `error`: sobreescritura visual de estados sin reemplazar el componente completo.
 
 ### API de seleccion
 
@@ -111,6 +128,37 @@ El payload de seleccion queda pensado para backend batch operations:
 
 - `allFiltered=false`: usar `selectedKeys`.
 - `allFiltered=true`: usar `query` + `unselectedKeys` como exclusiones.
+
+Desde Sprint 6, la API expuesta via `ref` tambien incorpora `refresh()` y `clearFilters()` para que la vista consumidora pueda disparar recarga o limpiar filtros sin envolver la tabla.
+
+## Ejemplo de toolbar integrada
+
+```vue
+<GenericDataTable
+  :columns="columns"
+  :query="query"
+  :data-provider="dataProvider"
+  show-refresh-button
+  show-count-bar
+  count-bar-position="both"
+  empty-message="No rows found"
+  loading-message="Loading rows..."
+  error-message="Rows could not be loaded"
+  @refresh="onRefresh"
+>
+  <template #toolbar-main="slotProps">
+    <span>{{ slotProps.filteredTotal }} filtered rows</span>
+  </template>
+
+  <template #toolbar-actions>
+    <Button text label="Run batch" @click="runBatchAction" />
+  </template>
+
+  <template #count-bar="slotProps">
+    <span>Visible {{ slotProps.shown }} of {{ slotProps.filteredTotal }}</span>
+  </template>
+</GenericDataTable>
+```
 
 ## Patron de uso recomendado
 

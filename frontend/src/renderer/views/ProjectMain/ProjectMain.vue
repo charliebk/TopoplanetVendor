@@ -14,11 +14,11 @@
               {{ currentProjectDescription }}
             </p>
             <div class="project-main__demo-intro">
-              <span class="project-main__demo-badge">Sprint 5 Demo</span>
+              <span class="project-main__demo-badge">Sprint 6 Demo</span>
               <p class="app-copy app-copy--muted">
-                Tabla temporal para validar filtros `list`, `date`, `idIcon`,
-                `startsWith`, `endsWith`, `dataProvider` asincrono y seleccion
-                avanzada con contexto filtrado.
+                Tabla temporal para validar toolbar extensible, count bar
+                desacoplado, `dataProvider` asincrono y seleccion avanzada sin
+                envolver la tabla con otra shell externa.
               </p>
             </div>
           </div>
@@ -27,10 +27,10 @@
 
       <PrimeCard class="app-panel project-main__panel">
         <template #title>
-          <span>CustomDataTableV1 Selection Demo</span>
+          <span>CustomDataTableV1 Toolbar Demo</span>
         </template>
         <template #subtitle>
-          Provider mode plus advanced selection payload validation
+          Provider mode with toolbar slots, refresh button and count bar
         </template>
         <template #content>
           <div class="app-stack app-stack--compact">
@@ -42,11 +42,46 @@
               :data-provider="demoDataProvider"
               selection-mode="multiple"
               empty-message="No demo audits match the current filters"
+              loading-message="Reloading demo audits..."
+              error-message="Demo audits could not be loaded"
               global-filter-placeholder="Filter demo audits"
+              show-refresh-button
+              refresh-label="Reload audits"
+              show-count-bar
+              count-bar-position="both"
+              count-bar-show-shown
               @update:query="onDemoQueryChange"
               @row-click="onDemoRowClick"
               @selection-change="onDemoSelectionChange"
-            />
+              @refresh="onDemoRefresh"
+            >
+              <template #toolbar-main="slotProps">
+                <span class="project-main__toolbar-pill">
+                  {{ slotProps.filteredTotal }} filtered audits
+                </span>
+              </template>
+
+              <template #toolbar-actions>
+                <PrimeButton
+                  type="button"
+                  icon="pi pi-inbox"
+                  text
+                  severity="secondary"
+                  label="Snapshot selection"
+                  @click="onRefreshSelectionApi"
+                />
+              </template>
+
+              <template #count-bar="slotProps">
+                <span class="project-main__toolbar-note">
+                  Visible {{ slotProps.shown }} of
+                  {{ slotProps.filteredTotal }} filtered
+                </span>
+                <span class="project-main__toolbar-note">
+                  Refreshes: {{ demoRefreshCount }}
+                </span>
+              </template>
+            </GenericDataTable>
 
             <div class="project-main__query-panel">
               <div class="project-main__query-header">
@@ -54,7 +89,7 @@
                   Emitted backend query
                 </span>
                 <span class="project-main__query-caption">
-                  Temporary inspection block for Sprint 5 validation
+                  Temporary inspection block for Sprint 6 validation
                 </span>
               </div>
               <pre class="project-main__query-code">{{ demoQueryPreview }}</pre>
@@ -109,6 +144,7 @@ import {
   type GenericDataTableExpose,
   type GenericDataTableQuery,
   type GenericDataTableQueryChangeHandler,
+  type GenericDataTableRefreshHandler,
   type GenericDataTableRowClickHandler,
   type GenericDataTableSelectionChangeHandler,
   type GenericDataTableSelectionPayload
@@ -145,6 +181,7 @@ const demoQuery = ref<GenericDataTableQuery>({
 })
 const demoSelection =
   ref<GenericDataTableSelectionPayload<DemoAuditRow> | null>(null)
+const demoRefreshCount = ref(0)
 
 const categoryOptions = [
   { label: 'Safety', value: 1 },
@@ -494,6 +531,10 @@ const onRefreshSelectionApi = (): void => {
   demoSelection.value = demoTable.value?.getSelectionPayload() ?? null
 }
 
+const onDemoRefresh: GenericDataTableRefreshHandler = () => {
+  demoRefreshCount.value += 1
+}
+
 const loadCurrentProject = async (): Promise<void> => {
   const selectedProjectId = preferencesStore.currentProjectId
 
@@ -555,6 +596,23 @@ onMounted((): void => {
   color: var(--app-text-strong);
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.project-main__toolbar-pill {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(32, 97, 61, 0.12);
+  color: var(--app-text-strong);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.project-main__toolbar-note {
+  color: var(--app-text-muted);
+  font-size: 0.82rem;
 }
 
 .project-main__query-panel {

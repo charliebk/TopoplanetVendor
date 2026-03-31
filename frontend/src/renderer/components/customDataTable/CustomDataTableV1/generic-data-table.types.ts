@@ -84,6 +84,25 @@ export interface GenericDataTableProviderErrorPayload {
   cause?: unknown
 }
 
+export interface GenericDataTableRefreshPayload {
+  query: GenericDataTableQuery
+  providerMode: boolean
+}
+
+export interface GenericDataTableCountBarProps {
+  baselineTotal: number | null
+  filteredTotal: number
+  shown?: number | null
+  hasFilters: boolean
+  showShown?: boolean
+  showClearFiltersButton?: boolean
+  clearFiltersLabel?: string
+  totalLabel?: string
+  resultsLabel?: string
+  shownLabel?: string
+  excludedLabel?: string
+}
+
 export type GenericDataTableSelectionMode = 'none' | 'multiple'
 
 export type GenericDataTableSelectionOverrideMode = 'selected' | 'unselected'
@@ -132,7 +151,30 @@ export type GenericDataTableExpose<Row extends GenericDataTableRow> = Pick<
   | 'clearSelection'
   | 'refreshVisibleRows'
   | 'getSelectionPayload'
->
+> & {
+  refresh: () => Promise<void>
+  clearFilters: () => void
+}
+
+export interface GenericDataTableToolbarSlotPayload<
+  Row extends GenericDataTableRow
+> {
+  query: GenericDataTableQuery
+  rows: Row[]
+  filteredTotal: number
+  baselineTotal: number | null
+  hasFilters: boolean
+  selection: GenericDataTableSelectionPayload<Row> | null
+  clearFilters: () => void
+  clearSelection: () => void
+  refresh: () => Promise<void>
+}
+
+export interface GenericDataTableCountBarSlotPayload<
+  Row extends GenericDataTableRow
+> extends GenericDataTableToolbarSlotPayload<Row> {
+  shown: number
+}
 
 export interface GenericDataTableSelectionOptions<
   Row extends GenericDataTableRow
@@ -210,14 +252,20 @@ export interface GenericDataTableProps<Row extends GenericDataTableRow> {
   rowHover?: boolean
   emptyMessage?: string
   loadingMessage?: string
+  errorMessage?: string
   globalFilterPlaceholder?: string
   clearFiltersLabel?: string
+  refreshLabel?: string
   selectPageLabel?: string
   selectFilteredLabel?: string
   clearSelectionLabel?: string
   showGlobalFilter?: boolean
   showClearFilters?: boolean
+  showRefreshButton?: boolean
   showSelectionToolbar?: boolean
+  showCountBar?: boolean
+  countBarPosition?: 'top' | 'bottom' | 'both'
+  countBarShowShown?: boolean
   showPaginator?: boolean
   dataProvider?: GenericDataTableDataProvider<Row>
 }
@@ -244,6 +292,7 @@ export type GenericDataTableEventName =
   | 'row-click'
   | 'action'
   | 'load'
+  | 'refresh'
   | 'selection-change'
   | 'provider-error'
 
@@ -252,6 +301,7 @@ export interface GenericDataTableEmits<Row extends GenericDataTableRow> {
   (event: 'row-click', payload: GenericDataTableRowClickPayload<Row>): void
   (event: 'action', payload: GenericDataTableActionPayload<Row>): void
   (event: 'load', payload: GenericDataTableLoadPayload<Row>): void
+  (event: 'refresh', payload: GenericDataTableRefreshPayload): void
   (
     event: 'selection-change',
     payload: GenericDataTableSelectionPayload<Row>
@@ -277,6 +327,10 @@ export type GenericDataTableLoadHandler<Row extends GenericDataTableRow> = (
 
 export type GenericDataTableProviderErrorHandler = (
   payload: GenericDataTableProviderErrorPayload
+) => void
+
+export type GenericDataTableRefreshHandler = (
+  payload: GenericDataTableRefreshPayload
 ) => void
 
 export type GenericDataTableSelectionChangeHandler<

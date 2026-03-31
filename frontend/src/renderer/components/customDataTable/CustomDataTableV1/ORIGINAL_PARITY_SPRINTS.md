@@ -141,6 +141,8 @@ Resultado aplicado en el modulo:
 
 Objetivo: recuperar piezas de UX del original sin contaminar el core.
 
+Estado actual: completado.
+
 Entregables:
 
 - Barra superior extensible con slots para acciones del consumidor.
@@ -151,6 +153,13 @@ Entregables:
 Criterio de cierre:
 
 - El consumidor no necesita envolver la tabla con otra toolbar para casos comunes.
+
+Resultado aplicado en el modulo:
+
+- `GenericDataTable.vue` incorpora slots `toolbar-main`, `toolbar-actions`, `count-bar`, `empty`, `loading` y `error`.
+- V1 incorpora `GenericDataTableCountBar.vue` como componente desacoplado para total global, total filtrado, visibles y excluidos.
+- La tabla expone boton opcional de refresh, evento `refresh` y API expuesta `refresh()` y `clearFilters()`.
+- `ProjectMain.vue` valida la integracion con una demo que consume toolbar slots, count bar y refresh.
 
 ## Sprint 7. Acciones, filas y accesibilidad
 
