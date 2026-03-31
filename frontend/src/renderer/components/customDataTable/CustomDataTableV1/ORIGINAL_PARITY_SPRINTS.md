@@ -65,6 +65,8 @@ Resultado aplicado en el modulo:
 
 Objetivo: igualar la flexibilidad funcional del filtrado original.
 
+Estado actual: completado.
+
 Entregables:
 
 - Soporte para `matchMode` ampliado: `startsWith`, `endsWith`, `equals`, `contains`.
@@ -76,6 +78,14 @@ Entregables:
 Criterio de cierre:
 
 - Un consumidor puede expresar filtros de backend sin parches en la vista contenedora.
+
+Resultado aplicado en el modulo:
+
+- V1 soporta `startsWith`, `endsWith`, `equals` y `contains`.
+- La sincronizacion entre query externa y filtros internos se rehace al cambiar query o columnas.
+- V1 soporta `paramTransform` por columna antes de emitir filtros.
+- Las columnas `date`, `list` y `select` tienen contrato reutilizable de emision.
+- `ProjectMain.vue` incluye una demo temporal lazy con columnas `list`, `date` e `idIcon` para validar la paridad visible.
 
 ## Sprint 4. Capa de proveedor de datos
 

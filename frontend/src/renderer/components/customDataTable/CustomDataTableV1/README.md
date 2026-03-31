@@ -333,6 +333,52 @@ Ejemplo de columna con metadatos nuevos:
 }
 ```
 
+## Estrategia de filtros de Sprint 3
+
+Sprint 3 fija este contrato para filtros:
+
+- `matchMode` acepta `contains`, `equals`, `startsWith` y `endsWith`.
+- Si una columna define `backendField`, la query emitida usa esa clave para filtros y orden.
+- Si una columna define `paramTransform`, la tabla aplica esa transformacion antes de emitir la query.
+- Si una columna `date` no define `paramTransform`, la tabla normaliza `Date` a `YYYY-MM-DD`.
+- Las columnas `list` y `select` emiten directamente el `value` de `filterOptions`.
+- `clearFilters` reinicia filtro global y filtros por columna, emitiendo una query limpia y consistente.
+
+Ejemplo de filtros backend-friendly:
+
+```ts
+{
+  field: 'ownerName',
+  header: 'Owner',
+  filterable: true,
+  matchMode: 'startsWith',
+  backendField: 'ownerName'
+}
+```
+
+```ts
+{
+  field: 'reviewedAt',
+  header: 'Reviewed At',
+  type: 'date',
+  filterable: true,
+  backendField: 'reviewedAt',
+  paramTransform: (value) => {
+    if (!(value instanceof Date)) return value
+    const year = value.getFullYear()
+    const month = `${value.getMonth() + 1}`.padStart(2, '0')
+    const day = `${value.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+}
+```
+
+Validacion visual temporal del sprint:
+
+- `ProjectMain.vue` contiene una demo mockeada con `lazy=true`.
+- La demo usa columnas `list`, `date` e `idIcon`.
+- La demo muestra la query emitida para validar que el consumidor ya recibe claves y valores listos para backend.
+
 ## Portabilidad
 
 Para copiarlo a otro proyecto sin deuda innecesaria:

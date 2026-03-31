@@ -12,6 +12,7 @@ export type {
   GenericDataTableFilterType,
   GenericDataTableFilterValue,
   GenericDataTableLoadResult,
+  GenericDataTableMatchMode,
   GenericDataTableOption,
   GenericDataTablePrimeFilter,
   GenericDataTablePrimeFilters,

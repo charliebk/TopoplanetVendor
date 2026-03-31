@@ -2,6 +2,12 @@ import type { ComputedRef, Ref } from 'vue'
 
 export type GenericDataTableRow = Record<string, unknown>
 
+export type GenericDataTableMatchMode =
+  | 'contains'
+  | 'equals'
+  | 'startsWith'
+  | 'endsWith'
+
 export type GenericDataTableColumnType =
   | 'text'
   | 'number'
@@ -58,6 +64,7 @@ export interface GenericDataTableColumn<Row extends GenericDataTableRow> {
   sortable?: boolean
   filterable?: boolean
   filterType?: GenericDataTableFilterType
+  matchMode?: GenericDataTableMatchMode
   filterOptions?: GenericDataTableOption[]
   width?: string
   minWidth?: string
@@ -65,6 +72,7 @@ export interface GenericDataTableColumn<Row extends GenericDataTableRow> {
   align?: 'left' | 'center' | 'right'
   displayField?: keyof Row & string
   backendField?: string
+  paramTransform?: (value: GenericDataTableFilterValue, row?: Row) => unknown
   tooltipField?: keyof Row & string
   idIconClass?: string | ((row: Row) => string)
   decimals?: number
@@ -142,7 +150,7 @@ export type GenericDataTableActionHandler<Row extends GenericDataTableRow> = (
 
 export interface GenericDataTablePrimeFilter {
   value: GenericDataTableFilterValue
-  matchMode: 'contains' | 'equals'
+  matchMode: GenericDataTableMatchMode
 }
 
 export type GenericDataTablePrimeFilters = Record<

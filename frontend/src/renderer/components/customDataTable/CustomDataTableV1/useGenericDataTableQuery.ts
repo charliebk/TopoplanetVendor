@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue'
 import type {
   GenericDataTableColumn,
   GenericDataTableFilterValue,
+  GenericDataTableMatchMode,
   GenericDataTablePrimeFilters,
   GenericDataTableQueryController,
   GenericDataTableQuery,
@@ -14,9 +15,51 @@ const resolveBackendField = <Row extends GenericDataTableRow>(
 
 const resolveMatchMode = <Row extends GenericDataTableRow>(
   column: GenericDataTableColumn<Row>
-): 'contains' | 'equals' => {
+): GenericDataTableMatchMode => {
+  if (column.matchMode) {
+    return column.matchMode
+  }
+
   const filterType = column.filterType ?? column.type ?? 'text'
   return filterType === 'text' ? 'contains' : 'equals'
+}
+
+const normalizeFilterValue = <Row extends GenericDataTableRow>(
+  column: GenericDataTableColumn<Row> | undefined,
+  value: GenericDataTableFilterValue
+): unknown => {
+  if (!column) {
+    return value
+  }
+
+  if (column.paramTransform) {
+    return column.paramTransform(value)
+  }
+
+  const filterType = column.filterType ?? column.type ?? 'text'
+
+  if (value === null || value === '') {
+    return null
+  }
+
+  if (filterType === 'date' && value instanceof Date) {
+    const year = value.getFullYear()
+    const month = `${value.getMonth() + 1}`.padStart(2, '0')
+    const day = `${value.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  if (
+    (filterType === 'number' ||
+      filterType === 'select' ||
+      filterType === 'list') &&
+    typeof value === 'string' &&
+    /^-?\d+(\.\d+)?$/.test(value)
+  ) {
+    return Number(value)
+  }
+
+  return value
 }
 
 const buildPrimeFilters = <Row extends GenericDataTableRow>(
@@ -61,8 +104,13 @@ const buildFilterRecord = <Row extends GenericDataTableRow>(
 
     const column = columns.find((candidate) => candidate.field === field)
     const queryField = column ? resolveBackendField(column) : field
+    const normalizedValue = normalizeFilterValue(column, filterMeta.value)
 
-    next[queryField] = filterMeta.value
+    if (normalizedValue === '' || normalizedValue === null) {
+      continue
+    }
+
+    next[queryField] = normalizedValue as GenericDataTableFilterValue
   }
 
   return next
@@ -97,6 +145,14 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
         globalFilter: nextQuery?.globalFilter ?? null,
         filters: { ...(nextQuery?.filters ?? {}) }
       }
+      primeFilters.value = buildPrimeFilters(columns, normalizedQuery.value)
+    },
+    { deep: true }
+  )
+
+  watch(
+    () => columns,
+    () => {
       primeFilters.value = buildPrimeFilters(columns, normalizedQuery.value)
     },
     { deep: true }
@@ -148,10 +204,15 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
     field: string,
     value: GenericDataTableFilterValue
   ): GenericDataTableQuery => {
+    const currentFilter = primeFilters.value[field] ?? {
+      value: null,
+      matchMode: 'contains' as GenericDataTableMatchMode
+    }
+
     primeFilters.value = {
       ...primeFilters.value,
       [field]: {
-        ...primeFilters.value[field],
+        ...currentFilter,
         value
       }
     }

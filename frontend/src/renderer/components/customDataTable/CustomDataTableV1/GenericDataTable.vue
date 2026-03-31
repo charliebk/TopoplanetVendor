@@ -88,7 +88,7 @@
                 <i
                   :class="resolveIdIconClass(column, slotProps.data)"
                   aria-hidden="true"
-                />
+                ></i>
                 <span v-if="resolveDisplayValue(column, slotProps.data)">
                   {{ resolveDisplayValue(column, slotProps.data) }}
                 </span>
