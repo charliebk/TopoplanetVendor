@@ -222,6 +222,7 @@
             #filter
           >
             <div class="generic-data-table__filter-cell">
+              <!-- eslint-disable vue/html-indent -->
               <PrimeDropdown
                 v-if="
                   resolveFilterType(column) === 'select' ||
@@ -238,6 +239,7 @@
                   (value) => onColumnFilterChange(column.field, value)
                 "
               />
+              <!-- eslint-enable vue/html-indent -->
 
               <PrimeDropdown
                 v-else-if="resolveFilterType(column) === 'boolean'"

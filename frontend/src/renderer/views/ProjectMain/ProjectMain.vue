@@ -50,9 +50,9 @@
 
             <div class="project-main__query-panel">
               <div class="project-main__query-header">
-                <span class="project-main__query-title"
-                  >Emitted backend query</span
-                >
+                <span class="project-main__query-title">
+                  Emitted backend query
+                </span>
                 <span class="project-main__query-caption">
                   Temporary inspection block for Sprint 5 validation
                 </span>
@@ -65,9 +65,9 @@
                 class="project-main__query-header project-main__query-header--split"
               >
                 <div>
-                  <span class="project-main__query-title"
-                    >Selection payload</span
-                  >
+                  <span class="project-main__query-title">
+                    Selection payload
+                  </span>
                   <span class="project-main__query-caption">
                     Stable batch payload including query, selected keys and
                     filtered context
