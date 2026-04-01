@@ -138,10 +138,7 @@
         >
           <div class="generic-data-table__option-errors-copy">
             <strong>
-              {{ optionErrorSummary.length }} filter option source{{
-                optionErrorSummary.length === 1 ? '' : 's'
-              }}
-              failed
+              {{ formatOptionSourceFailureLabel(optionErrorSummary.length) }}
             </strong>
             <span>
               {{ optionErrorSummaryText }}
@@ -153,7 +150,7 @@
             text
             size="small"
             severity="danger"
-            label="Retry all"
+            :label="GENERIC_DATA_TABLE_LOCALE.retryAllLabel"
             @click="void onReloadAllFilterOptions()"
           />
         </div>
@@ -226,7 +223,7 @@
               :model-value="selectionState.allVisibleSelected.value"
               :indeterminate="selectionState.someVisibleSelected.value"
               :disabled="getSelectableRows(resolvedRows).length === 0"
-              aria-label="Select visible rows"
+              :aria-label="GENERIC_DATA_TABLE_LOCALE.selectVisibleRowsAriaLabel"
               @update:model-value="onToggleVisibleRows"
             />
           </div>
@@ -241,7 +238,9 @@
               :binary="true"
               :model-value="selectionState.isRowSelected(slotProps.data)"
               :disabled="isRowDisabled(slotProps.data)"
-              :aria-label="`Select ${resolveRowAriaLabel(slotProps.data)}`"
+              :aria-label="
+                formatSelectRowAriaLabel(resolveRowAriaLabel(slotProps.data))
+              "
               @update:model-value="
                 (value) => onRowSelectionChange(slotProps.data, value)
               "
@@ -404,7 +403,7 @@
                   text
                   size="small"
                   severity="danger"
-                  label="Retry"
+                  :label="GENERIC_DATA_TABLE_LOCALE.retryLabel"
                   @click="void onReloadColumnOptions(column.field)"
                 />
               </div>
@@ -444,7 +443,11 @@
                 input-class="generic-data-table__filter-input"
                 :placeholder="column.header"
                 @update:model-value="
-                  (value) => onColumnFilterChange(column.field, value ?? null)
+                  (value) =>
+                    onColumnFilterChange(
+                      column.field,
+                      normalizeDateFilterValue(value)
+                    )
                 "
               />
 
@@ -548,6 +551,17 @@ import PrimeInputNumber from 'primevue/inputnumber'
 import PrimeInputText from 'primevue/inputtext'
 import PrimeTag from 'primevue/tag'
 import GenericDataTableCountBar from './GenericDataTableCountBar.vue'
+import {
+  buildGenericDataTableActionPayload,
+  isGenericDataTableActionDisabled,
+  resolveGenericDataTableActionAriaLabel,
+  resolveGenericDataTableActionClass
+} from './generic-data-table.actions'
+import {
+  GENERIC_DATA_TABLE_LOCALE,
+  formatOptionSourceFailureLabel,
+  formatSelectRowAriaLabel
+} from './generic-data-table.locale'
 import { exportDataTableCsv, prepareDataTablePrint } from './tableExport'
 import type {
   GenericDataTableAction,
@@ -592,15 +606,15 @@ const props = withDefaults(
     showGridlines: true,
     stripedRows: false,
     rowHover: true,
-    emptyMessage: 'No data available',
-    loadingMessage: 'Loading data...',
-    errorMessage: 'Failed to load data',
-    globalFilterPlaceholder: 'Filter all columns',
-    clearFiltersLabel: 'Clear filters',
-    refreshLabel: 'Refresh',
-    selectPageLabel: 'Select page',
-    selectFilteredLabel: 'Select filtered',
-    clearSelectionLabel: 'Clear selection',
+    emptyMessage: GENERIC_DATA_TABLE_LOCALE.emptyMessage,
+    loadingMessage: GENERIC_DATA_TABLE_LOCALE.loadingMessage,
+    errorMessage: GENERIC_DATA_TABLE_LOCALE.errorMessage,
+    globalFilterPlaceholder: GENERIC_DATA_TABLE_LOCALE.globalFilterPlaceholder,
+    clearFiltersLabel: GENERIC_DATA_TABLE_LOCALE.clearFiltersLabel,
+    refreshLabel: GENERIC_DATA_TABLE_LOCALE.refreshLabel,
+    selectPageLabel: GENERIC_DATA_TABLE_LOCALE.selectPageLabel,
+    selectFilteredLabel: GENERIC_DATA_TABLE_LOCALE.selectFilteredLabel,
+    clearSelectionLabel: GENERIC_DATA_TABLE_LOCALE.clearSelectionLabel,
     showGlobalFilter: true,
     showClearFilters: true,
     showRefreshButton: false,
@@ -648,9 +662,9 @@ const {
   setFilterValue,
   clearFilters
 } = useGenericDataTableQuery(
-  props.columns,
-  props.query,
-  props.query?.size ?? 10
+  computed(() => props.columns),
+  computed(() => props.query),
+  computed(() => props.query?.size ?? 10)
 )
 
 const isProviderMode = computed(() => typeof props.dataProvider === 'function')
@@ -670,8 +684,8 @@ const optionState = useGenericDataTableOptions({
 })
 
 const booleanFilterOptions = [
-  { label: 'Yes', value: true },
-  { label: 'No', value: false }
+  { label: GENERIC_DATA_TABLE_LOCALE.booleanTrueLabel, value: true },
+  { label: GENERIC_DATA_TABLE_LOCALE.booleanFalseLabel, value: false }
 ]
 
 const resolvedRows = computed(() =>
@@ -802,14 +816,14 @@ const selectAllFilteredDisabledReason = computed(() => {
     isProviderMode.value &&
     resolvedDisabledSelectionScope.value === 'visible'
   ) {
-    return 'Select filtered requires disabled rows resolved for the full filtered result in provider mode.'
+    return GENERIC_DATA_TABLE_LOCALE.selectFilteredProviderModeReason
   }
 
   if (resolvedDisabledSelectionScope.value === 'filtered') {
-    return 'Select filtered is blocked until disabledFilteredRowsResolved is true.'
+    return GENERIC_DATA_TABLE_LOCALE.selectFilteredResolveDisabledReason
   }
 
-  return 'Select filtered is not available for the current selection configuration.'
+  return GENERIC_DATA_TABLE_LOCALE.selectFilteredUnavailableReason
 })
 
 const selectionState = useGenericDataTableSelection({
@@ -971,11 +985,11 @@ const selectionSummary = computed(() => {
   return `${selectedCount} rows selected`
 })
 
-const resolvedSortField = computed(() => {
+const resolvedSortField = computed<string | undefined>(() => {
   const querySortField = normalizedQuery.value.sortField
 
   if (!querySortField) {
-    return null
+    return undefined
   }
 
   const column = props.columns.find(
@@ -1040,7 +1054,15 @@ const optionErrorSummary = computed(() => {
         message: error.message
       }
     })
-    .filter(Boolean)
+    .filter(
+      (
+        error
+      ): error is {
+        field: string
+        header: string
+        message: string
+      } => Boolean(error)
+    )
 })
 
 const hasOptionErrors = computed(() => optionErrorSummary.value.length > 0)
@@ -1121,11 +1143,17 @@ const resolveBooleanLabel = (
   value: unknown
 ): string => {
   if (value === true) {
-    return column.booleanLabels?.trueLabel ?? 'Yes'
+    return (
+      column.booleanLabels?.trueLabel ??
+      GENERIC_DATA_TABLE_LOCALE.booleanTrueLabel
+    )
   }
 
   if (value === false) {
-    return column.booleanLabels?.falseLabel ?? 'No'
+    return (
+      column.booleanLabels?.falseLabel ??
+      GENERIC_DATA_TABLE_LOCALE.booleanFalseLabel
+    )
   }
 
   return column.booleanLabels?.nullLabel ?? '-'
@@ -1185,56 +1213,42 @@ const resolveActionClass = (
   action: GenericDataTableAction<GenericDataTableRow>,
   row: GenericDataTableRow
 ): Array<string | string[] | Record<string, boolean>> => {
-  const resolvedClass =
-    typeof action.class === 'function' ? action.class(row) : action.class
-
-  return [
-    'generic-data-table__action-button',
-    `generic-data-table__action-button--${action.key}`,
-    {
-      'generic-data-table__action-button--disabled': isActionDisabled(
-        action,
-        row
-      )
-    },
-    ...(resolvedClass ? [resolvedClass] : [])
-  ]
+  return resolveGenericDataTableActionClass(action, row, isRowDisabled(row))
 }
 
 const resolveActionAriaLabel = (
   action: GenericDataTableAction<GenericDataTableRow>,
   row: GenericDataTableRow
 ): string => {
-  return resolveActionTooltip(action, row) || action.label || action.key
+  return resolveGenericDataTableActionAriaLabel(
+    action,
+    row,
+    resolveActionTooltip(action, row)
+  )
 }
 
 const isActionDisabled = (
   action: GenericDataTableAction<GenericDataTableRow>,
   row: GenericDataTableRow
 ): boolean => {
-  if (isRowDisabled(row)) {
-    return true
-  }
-
-  if (typeof action.disabled === 'function') {
-    return action.disabled(row)
-  }
-
-  return action.disabled === true
+  return isGenericDataTableActionDisabled(action, row, isRowDisabled(row))
 }
 
 const onActionClick = (
   action: GenericDataTableAction<GenericDataTableRow>,
   row: GenericDataTableRow
 ): void => {
-  if (isActionDisabled(action, row)) {
+  const payload = buildGenericDataTableActionPayload(
+    action,
+    row,
+    isRowDisabled(row)
+  )
+
+  if (!payload) {
     return
   }
 
-  emit('action', {
-    actionKey: action.key,
-    row
-  })
+  emit('action', payload)
 }
 
 const formatCellValue = (
@@ -1344,8 +1358,18 @@ const onColumnFilterChange = (
   emit('update:query', setFilterValue(field, value))
 }
 
-const onGlobalFilterChange = (value: string | null): void => {
-  emit('update:query', setFilterValue('global', value))
+const onGlobalFilterChange = (value: string | undefined): void => {
+  emit('update:query', setFilterValue('global', value ?? null))
+}
+
+const normalizeDateFilterValue = (
+  value: Date | Array<Date | null> | null | undefined
+): Date | null => {
+  if (Array.isArray(value)) {
+    return value[0] ?? null
+  }
+
+  return value ?? null
 }
 
 const onClearFilters = (): void => {
@@ -1463,16 +1487,19 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
 
 <style scoped>
 .generic-data-table {
+  --gdt-space-3: var(--app-space-3, 0.75rem);
+  --gdt-space-4: var(--app-space-4, 1rem);
+  --gdt-text-muted: var(--app-text-muted, #5f6b76);
   display: flex;
   flex-direction: column;
-  gap: var(--app-space-3);
+  gap: var(--gdt-space-3);
 }
 
 .generic-data-table__toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--app-space-3);
+  gap: var(--gdt-space-3);
   flex-wrap: wrap;
 }
 
@@ -1495,7 +1522,7 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
 }
 
 .generic-data-table__selection-summary {
-  color: var(--app-text-muted);
+  color: var(--gdt-text-muted);
   font-size: 0.9rem;
 }
 
@@ -1579,9 +1606,9 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
 }
 
 .generic-data-table__state-message {
-  padding: var(--app-space-4);
+  padding: var(--gdt-space-4);
   text-align: center;
-  color: var(--app-text-muted);
+  color: var(--gdt-text-muted);
 }
 
 :deep(.generic-data-table .p-datatable-tbody > tr) {

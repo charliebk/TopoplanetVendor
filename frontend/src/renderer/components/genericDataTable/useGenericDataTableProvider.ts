@@ -1,4 +1,4 @@
-import { ref, watch, type ComputedRef } from 'vue'
+import { ref, watch, type ComputedRef, type Ref } from 'vue'
 import type {
   GenericDataTableColumn,
   GenericDataTableDataProvider,
@@ -48,7 +48,7 @@ export const useGenericDataTableProvider = <
   onLoad?: (payload: GenericDataTableLoadPayload<Row>) => void
   onError?: (payload: GenericDataTableProviderErrorPayload) => void
 }): GenericDataTableProviderState<Row> => {
-  const rows = ref<Row[]>([])
+  const rows = ref<Row[]>([]) as Ref<Row[]>
   const totalRecords = ref(0)
   const overallTotal = ref<number | null>(null)
   const baselineTotal = ref<number | null>(null)

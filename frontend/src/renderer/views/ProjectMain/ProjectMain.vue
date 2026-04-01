@@ -27,7 +27,7 @@
 
       <PrimeCard class="app-panel project-main__panel">
         <template #title>
-          <span>CustomDataTableV1 Dynamic Options Demo</span>
+          <span>CustomDataTable Dynamic Options Demo</span>
         </template>
         <template #subtitle>
           Provider mode with dynamic list filters, batch selection and export
@@ -285,7 +285,7 @@ import {
   type GenericDataTableRowClickHandler,
   type GenericDataTableSelectionChangeHandler,
   type GenericDataTableSelectionPayload
-} from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
+} from '@/renderer/components/genericDataTable/custom-data-table.public'
 
 const router = useRouter()
 const { t } = useI18n()

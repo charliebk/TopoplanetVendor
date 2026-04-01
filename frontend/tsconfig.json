@@ -3,7 +3,8 @@
     "baseUrl": "./",
     "outDir": "./dist",
     "target": "esnext",
-    "module": "Preserve",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "moduleDetection": "force",
     "jsx": "preserve",
     "noImplicitAny": false,
@@ -14,6 +15,7 @@
     "sourceMap": true,
     "strict": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "paths": {
       "@/*": ["./src/*"]
     },

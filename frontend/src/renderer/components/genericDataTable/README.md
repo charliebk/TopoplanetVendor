@@ -1,21 +1,26 @@
-# CustomDataTableV1
+# CustomDataTable
 
 ## Objetivo
 
-`CustomDataTableV1` es la base limpia y portable de la tabla reutilizable. Su alcance actual es deliberadamente pequeno: renderizado de columnas, paginacion, orden, filtros simples, acciones por fila y un contrato de query estable.
+`CustomDataTable` es la base limpia y portable de la tabla reutilizable. Su alcance actual es deliberadamente pequeno: renderizado de columnas, paginacion, orden, filtros simples, acciones por fila y un contrato de query estable.
 
-La intencion de esta carpeta es que pueda copiarse a otro proyecto sin arrastrar dependencias del componente heredado.
+La intencion de este modulo es que pueda copiarse a otro proyecto sin arrastrar dependencias del componente heredado.
 
 ## Archivos del modulo
 
 - `GenericDataTable.vue`: componente visual principal.
 - `GenericDataTableCountBar.vue`: contador desacoplado reutilizable para listados.
+- `generic-data-table.locale.ts`: textos base y helpers de locale propios de V1.
+- `generic-data-table.actions.ts`: helpers puros para endurecer y testear acciones por fila.
 - `tableExport.ts`: helpers publicos para exportar CSV y preparar impresion.
 - `toBatchRequest.ts`: helper publico para traducir seleccion detallada a request batch.
 - `useGenericDataTableQuery.ts`: normalizacion de query y traduccion a filtros de PrimeVue.
 - `useGenericDataTableSelection.ts`: seleccion avanzada con `select all filtered`, overrides y payload estable.
 - `generic-data-table.types.ts`: tipos publicos del modulo.
-- `custom-data-table-v1.public.ts`: punto de entrada recomendado para importar el modulo.
+- `custom-data-table.public.ts`: punto de entrada recomendado para importar el modulo.
+- `PORTABILITY_CHECKLIST.md`: receta corta y verificacion para copiar el modulo.
+- `VERSIONING.md`: politica interna para futuras evoluciones de V1.
+- `__tests__/`: pruebas unitarias de tipos, query y acciones.
 
 ## Dependencias al copiarlo a otro proyecto
 
@@ -23,22 +28,18 @@ Antes de copiar la carpeta, el proyecto destino necesita:
 
 - Vue 3 con `<script setup lang="ts">`.
 - PrimeVue con estos componentes disponibles: `DataTable`, `Column`, `Button`, `Checkbox`, `Dropdown`, `InputNumber`, `InputText`, `Tag`, `Calendar`.
-- Variables CSS equivalentes o compatibles con:
-  - `--app-space-3`
-  - `--app-space-4`
-  - `--app-text-muted`
-
-Si el proyecto destino no usa esas variables, basta con redefinirlas o ajustar el bloque `<style scoped>`.
+- V1 ya incluye fallbacks visuales dentro de sus propios `<style scoped>`, asi que no requiere variables CSS globales del proyecto anfitrion para verse correctamente.
 
 ## API publica recomendada
 
-Importa siempre desde `custom-data-table-v1.public.ts` para que la carpeta tenga un punto de entrada claro y no se acople a rutas internas.
+Importa siempre desde `custom-data-table.public.ts` para que el modulo tenga un punto de entrada claro y no se acople a rutas internas.
 
 ```ts
 import {
   exportDataTableCsv,
   GenericDataTable,
   GenericDataTableCountBar,
+  GENERIC_DATA_TABLE_LOCALE,
   prepareDataTablePrint,
   toBatchRequest,
   useGenericDataTableOptions,
@@ -47,7 +48,7 @@ import {
   type GenericDataTableColumn,
   type GenericDataTableQuery,
   type GenericDataTableRow
-} from './CustomDataTableV1/custom-data-table-v1.public'
+} from '@/renderer/components/genericDataTable/custom-data-table.public'
 ```
 
 ## Superficie publica congelada en Sprint 1
@@ -61,7 +62,17 @@ Durante Sprint 1, la API publica de V1 queda definida asi:
 - Tipos de eventos: `GenericDataTableUpdateQueryPayload`, `GenericDataTableRowClickPayload`, `GenericDataTableActionPayload`.
 - Helpers tipados: `GenericDataTableQueryController`, `GenericDataTableQueryChangeHandler`, `GenericDataTableRowClickHandler`, `GenericDataTableActionHandler`.
 
-Todo consumo externo debe importar solo desde `custom-data-table-v1.public.ts`.
+Todo consumo externo debe importar solo desde `custom-data-table.public.ts`.
+
+## Sprint 10 hardening
+
+Sprint 10 deja el modulo preparado para copiarse entre proyectos con menos riesgo operativo:
+
+- `npm run test:unit` ejecuta pruebas unitarias de tipos, query y acciones.
+- `useGenericDataTableQuery` acepta valores planos o refs/computed y vuelve a sincronizarse cuando cambian `query`, `columns` o el tamano por defecto.
+- Los textos base viven en `generic-data-table.locale.ts`.
+- La carpeta incluye `PORTABILITY_CHECKLIST.md` y `VERSIONING.md`.
+- Ya no quedan archivos legacy del datatable fuera del modulo `genericDataTable`.
 
 ## Compatibilidad esperada con PrimeVue
 
@@ -166,6 +177,11 @@ Compatibilidad asumida por implementacion actual:
 - `count-bar`: contenido adicional dentro del contador desacoplado.
 - `empty`, `loading`, `error`: sobreescritura visual de estados sin reemplazar el componente completo.
 - Los slots de toolbar, `option-errors` y count bar reciben tambien `optionErrors`, `hasOptionErrors` y `reloadFilterOptions()` para que la pantalla pueda renderizar o reintentar un resumen global cuando fallen varios `optionItemsProvider`.
+
+## Ejemplos reales en el proyecto
+
+- `ProjectMain.vue` sigue funcionando como demo exhaustiva de parity y regresion.
+- `ProjectModuleView.vue` ahora renderiza ejemplos reales en las rutas `/project/vendors` y `/project/products`, ambos consumiendo la API publica de V1 sin wrappers legacy.
 
 ### API de seleccion
 
@@ -318,7 +334,7 @@ import {
   type GenericDataTableColumn,
   type GenericDataTableQuery,
   type GenericDataTableQueryChangeHandler
-} from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
+} from '@/renderer/components/genericDataTable/custom-data-table.public'
 
 type DemoRow = {
   id: number
@@ -385,7 +401,7 @@ import {
   type GenericDataTableColumn,
   type GenericDataTableQuery,
   type GenericDataTableQueryChangeHandler
-} from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
+} from '@/renderer/components/genericDataTable/custom-data-table.public'
 
 type CategoryRow = {
   id: number
@@ -506,7 +522,7 @@ import {
   type GenericDataTableQuery,
   type GenericDataTableSelectionChangeHandler,
   type GenericDataTableSelectionPayload
-} from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
+} from '@/renderer/components/genericDataTable/custom-data-table.public'
 
 type AuditRow = {
   id: number
@@ -577,7 +593,7 @@ import {
   type GenericDataTableProviderErrorHandler,
   type GenericDataTableQuery,
   type GenericDataTableQueryChangeHandler
-} from '@/renderer/components/customDataTable/CustomDataTableV1/custom-data-table-v1.public'
+} from '@/renderer/components/genericDataTable/custom-data-table.public'
 
 type AuditRow = {
   id: number
@@ -779,8 +795,8 @@ Validacion visual temporal del sprint:
 
 Para copiarlo a otro proyecto sin deuda innecesaria:
 
-1. Copiar la carpeta completa `CustomDataTableV1`.
-2. Ajustar el alias de importacion al punto de entrada `custom-data-table-v1.public.ts`.
+1. Copiar el contenido del modulo `genericDataTable`.
+2. Ajustar el alias de importacion al punto de entrada `custom-data-table.public.ts`.
 3. Verificar los nombres de componentes PrimeVue en el proyecto destino.
 4. Verificar variables CSS o adaptar el estilo local.
 5. Crear un ejemplo minimo de smoke test con una tabla y dos columnas filtrables.
@@ -791,4 +807,4 @@ Esta version todavia no cubre toda la funcionalidad del componente original. La 
 
 ## Regla de cierre de Sprint 1
 
-Si un consumidor necesita importar algo desde `GenericDataTable.vue`, `generic-data-table.types.ts` o `useGenericDataTableQuery.ts`, entonces Sprint 1 no esta realmente cerrado. El contrato publico valido es solo `custom-data-table-v1.public.ts`.
+Si un consumidor necesita importar algo desde `GenericDataTable.vue`, `generic-data-table.types.ts` o `useGenericDataTableQuery.ts`, entonces Sprint 1 no esta realmente cerrado. El contrato publico valido es solo `custom-data-table.public.ts`.

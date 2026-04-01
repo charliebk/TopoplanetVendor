@@ -2,7 +2,7 @@
 
 ## Alcance
 
-Esta lista convierte la brecha entre `CustomDataTableV1` y el componente original heredado en sprints concretos. La referencia funcional es el conjunto formado por:
+Esta lista convierte la brecha entre `CustomDataTable` y el componente original heredado en sprints concretos. El codigo ya vive directamente en `genericDataTable`, y la referencia funcional sigue siendo el conjunto formado por:
 
 - `CustomDataTable.vue`
 - `datatable-types.ts`
@@ -28,11 +28,11 @@ Entregables:
 
 Criterio de cierre:
 
-- Cualquier consumidor importa solo desde `custom-data-table-v1.public.ts`.
+- Cualquier consumidor importa solo desde `custom-data-table.public.ts`.
 
 Resultado aplicado en el modulo:
 
-- Existe un punto de entrada publico unico: `custom-data-table-v1.public.ts`.
+- Existe un punto de entrada publico unico: `custom-data-table.public.ts`.
 - Los tipos publicos de props, eventos, payloads y helpers ya tienen nombres estables.
 - El README documenta la compatibilidad esperada con PrimeVue.
 - El README incluye ejemplo minimo de consumo controlado y ejemplo minimo de lazy loading.
@@ -205,7 +205,7 @@ Criterio de cierre:
 Resultado aplicado en el modulo:
 
 - `GenericDataTableColumn` soporta `exportable`, `exportHeader`, `exportKey` y `exportFormat`.
-- V1 expone `exportDataTableCsv(...)` y `prepareDataTablePrint(...)` desde `custom-data-table-v1.public.ts`.
+- V1 expone `exportDataTableCsv(...)` y `prepareDataTablePrint(...)` desde `custom-data-table.public.ts`.
 - `GenericDataTable.vue` anade `exportCsv()` y `preparePrint()` en la API expuesta via `ref`.
 - Las columnas `actions` quedan excluidas automaticamente del CSV y del payload de impresion.
 
@@ -237,6 +237,8 @@ Resultado aplicado en el modulo:
 
 Objetivo: dejar el modulo listo para copiarse entre proyectos con bajo riesgo.
 
+Estado actual: completado.
+
 Entregables:
 
 - Tests unitarios de tipos, query y acciones.
@@ -247,6 +249,15 @@ Entregables:
 Criterio de cierre:
 
 - El modulo puede copiarse a otro proyecto con una receta corta y verificable.
+
+Resultado aplicado en el modulo:
+
+- V1 incorpora pruebas unitarias para tipos publicos, reactividad de query y helpers de acciones.
+- `ProjectMain.vue` y `ProjectModuleView.vue` dejan ejemplos ejecutables dentro de vistas reales del proyecto.
+- La carpeta incorpora `PORTABILITY_CHECKLIST.md` con una receta corta y verificable de copia.
+- La carpeta incorpora `VERSIONING.md` con reglas de evolucion interna para V1.
+- Los textos base se concentran en `generic-data-table.locale.ts` y los estilos ya incluyen fallbacks locales para no depender del CSS global del proyecto anfitrion.
+- Los archivos legacy del datatable fuera del modulo `genericDataTable` se eliminan.
 
 ## Orden recomendado
 

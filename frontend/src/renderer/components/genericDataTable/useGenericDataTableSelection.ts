@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import type {
   GenericDataTableRow,
+  GenericDataTableSelectionBatchPayload,
   GenericDataTableSelectionOptions,
   GenericDataTableSelectionOverride,
   GenericDataTableSelectionPayload,
@@ -151,7 +152,7 @@ export const useGenericDataTableSelection = <Row extends GenericDataTableRow>(
     return 'Filtered batch selection is not available for the current state.'
   })
 
-  const batchPayload = computed(() => {
+  const batchPayload = computed<GenericDataTableSelectionBatchPayload>(() => {
     const strategy = allFiltered.value ? 'filterQuery' : 'includeKeys'
 
     return {

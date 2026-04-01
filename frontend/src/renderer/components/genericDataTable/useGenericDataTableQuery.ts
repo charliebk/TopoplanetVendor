@@ -1,4 +1,5 @@
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import type {
   GenericDataTableColumn,
   GenericDataTableFilterValue,
@@ -117,43 +118,50 @@ const buildFilterRecord = <Row extends GenericDataTableRow>(
 }
 
 export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
-  columns: Array<GenericDataTableColumn<Row>>,
-  query: GenericDataTableQuery | undefined,
-  defaultRows: number
+  columnsSource: MaybeRefOrGetter<Array<GenericDataTableColumn<Row>>>,
+  querySource: MaybeRefOrGetter<GenericDataTableQuery | undefined>,
+  defaultRowsSource: MaybeRefOrGetter<number>
 ): GenericDataTableQueryController => {
+  const resolvedColumns = computed(() => toValue(columnsSource))
+  const resolvedQuery = computed(() => toValue(querySource))
+  const resolvedDefaultRows = computed(() => toValue(defaultRowsSource))
+
+  const buildNormalizedQuery = (): GenericDataTableQuery => ({
+    page: resolvedQuery.value?.page ?? 0,
+    size: resolvedQuery.value?.size ?? resolvedDefaultRows.value,
+    sortField: resolvedQuery.value?.sortField ?? null,
+    sortOrder: resolvedQuery.value?.sortOrder ?? 1,
+    globalFilter: resolvedQuery.value?.globalFilter ?? null,
+    filters: { ...(resolvedQuery.value?.filters ?? {}) }
+  })
+
   const normalizedQuery = ref<GenericDataTableQuery>({
-    page: query?.page ?? 0,
-    size: query?.size ?? defaultRows,
-    sortField: query?.sortField ?? null,
-    sortOrder: query?.sortOrder ?? 1,
-    globalFilter: query?.globalFilter ?? null,
-    filters: { ...(query?.filters ?? {}) }
+    ...buildNormalizedQuery()
   })
 
   const primeFilters = ref<GenericDataTablePrimeFilters>(
-    buildPrimeFilters(columns, normalizedQuery.value)
+    buildPrimeFilters(resolvedColumns.value, normalizedQuery.value)
   )
 
   watch(
-    () => query,
-    (nextQuery) => {
-      normalizedQuery.value = {
-        page: nextQuery?.page ?? 0,
-        size: nextQuery?.size ?? defaultRows,
-        sortField: nextQuery?.sortField ?? null,
-        sortOrder: nextQuery?.sortOrder ?? 1,
-        globalFilter: nextQuery?.globalFilter ?? null,
-        filters: { ...(nextQuery?.filters ?? {}) }
-      }
-      primeFilters.value = buildPrimeFilters(columns, normalizedQuery.value)
+    [resolvedQuery, resolvedDefaultRows],
+    () => {
+      normalizedQuery.value = buildNormalizedQuery()
+      primeFilters.value = buildPrimeFilters(
+        resolvedColumns.value,
+        normalizedQuery.value
+      )
     },
     { deep: true }
   )
 
   watch(
-    () => columns,
+    resolvedColumns,
     () => {
-      primeFilters.value = buildPrimeFilters(columns, normalizedQuery.value)
+      primeFilters.value = buildPrimeFilters(
+        resolvedColumns.value,
+        normalizedQuery.value
+      )
     },
     { deep: true }
   )
@@ -171,7 +179,7 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
       typeof primeFilters.value.global?.value === 'string'
         ? primeFilters.value.global.value
         : null,
-    filters: buildFilterRecord(columns, primeFilters.value)
+    filters: buildFilterRecord(resolvedColumns.value, primeFilters.value)
   }))
 
   const setPage = (page: number, size: number): GenericDataTableQuery => {
@@ -188,7 +196,9 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
     sortField: string | null,
     sortOrder: 1 | -1
   ): GenericDataTableQuery => {
-    const column = columns.find((candidate) => candidate.field === sortField)
+    const column = resolvedColumns.value.find(
+      (candidate) => candidate.field === sortField
+    )
 
     normalizedQuery.value = {
       ...normalizedQuery.value,
@@ -226,7 +236,7 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
   }
 
   const clearFilters = (): GenericDataTableQuery => {
-    primeFilters.value = buildPrimeFilters(columns, {
+    primeFilters.value = buildPrimeFilters(resolvedColumns.value, {
       ...normalizedQuery.value,
       page: 0,
       globalFilter: null,

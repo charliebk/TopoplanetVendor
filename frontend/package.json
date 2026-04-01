@@ -33,6 +33,8 @@
     "build:win": "npm run build:pre && electron-builder --config=buildAssets/builder/config.js --windows",
     "lint": "eslint . --ext .js,.ts,.vue .",
     "lint:fix": "eslint . --ext .js,.ts,.vue --fix .",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "format": "prettier .",
     "format:fix": "prettier . --write"
   },
@@ -79,6 +81,7 @@
     "vite-plugin-electron-renderer": "^0.14.6",
     "vite-plugin-eslint": "^1.8.1",
     "vite-plugin-vuetify": "^2.1.3",
+    "vitest": "^3.2.4",
     "vue-eslint-parser": "^10.4.0",
     "vue-tsc": "^3.2.5",
     "vuetify": "^4.0.0"

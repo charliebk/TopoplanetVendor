@@ -1,5 +1,10 @@
 export { default as GenericDataTable } from './GenericDataTable.vue'
 export { default as GenericDataTableCountBar } from './GenericDataTableCountBar.vue'
+export {
+  GENERIC_DATA_TABLE_LOCALE,
+  formatOptionSourceFailureLabel,
+  formatSelectRowAriaLabel
+} from './generic-data-table.locale'
 export { exportDataTableCsv, prepareDataTablePrint } from './tableExport'
 export { toBatchRequest } from './toBatchRequest'
 export { useGenericDataTableOptions } from './useGenericDataTableOptions'
@@ -68,3 +73,5 @@ export type {
   GenericDataTableToolbarSlotPayload,
   GenericDataTableUpdateQueryPayload
 } from './generic-data-table.types'
+
+export type { GenericDataTableLocale } from './generic-data-table.locale'
