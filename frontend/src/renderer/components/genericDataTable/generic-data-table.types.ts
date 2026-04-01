@@ -486,7 +486,7 @@ export type GenericDataTableSelectionChangeHandler<
 > = (payload: GenericDataTableSelectionPayload<Row>) => void
 
 export interface GenericDataTablePrimeFilter {
-  value: GenericDataTableFilterValue
+  value: GenericDataTableFilterValue | undefined
   matchMode: GenericDataTableMatchMode
 }
 
@@ -507,7 +507,7 @@ export interface GenericDataTableQueryController {
   ) => GenericDataTableQuery
   setFilterValue: (
     field: string,
-    value: GenericDataTableFilterValue
+    value: GenericDataTableFilterValue | undefined
   ) => GenericDataTableQuery
   clearFilters: () => GenericDataTableQuery
 }

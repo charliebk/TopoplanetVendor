@@ -84,7 +84,7 @@
         />
 
         <PrimeButton
-          v-if="showClearFilters"
+          v-if="showClearFilters && hasActiveFilters"
           type="button"
           icon="pi pi-filter-slash"
           text
@@ -258,6 +258,9 @@
           :header="column.header"
           :sortable="column.sortable === true"
           :filter="column.filterable === true"
+          :show-filter-menu="false"
+          :show-clear-button="false"
+          :show-apply-button="false"
           :style="column.width ? { width: column.width } : undefined"
           :header-style="
             resolveAlignmentStyle(
@@ -376,6 +379,8 @@
                   resolveFilterType(column) === 'select' ||
                   resolveFilterType(column) === 'list'
                 "
+                append-to="body"
+                panel-class="generic-data-table__dropdown-panel"
                 :model-value="primeFilters[column.field]?.value ?? null"
                 :options="resolveColumnFilterOptions(column)"
                 option-label="label"
@@ -386,6 +391,60 @@
                 class="generic-data-table__filter-input"
                 @update:model-value="
                   (value) => onColumnFilterChange(column.field, value)
+                "
+              />
+              <PrimeDropdown
+                v-else-if="resolveFilterType(column) === 'boolean'"
+                append-to="body"
+                panel-class="generic-data-table__dropdown-panel"
+                :model-value="primeFilters[column.field]?.value ?? null"
+                :options="booleanFilterOptions"
+                option-label="label"
+                option-value="value"
+                show-clear
+                :placeholder="column.header"
+                class="generic-data-table__filter-input"
+                @update:model-value="
+                  (value) => onColumnFilterChange(column.field, value)
+                "
+              />
+              <PrimeInputNumber
+                v-else-if="isNumericFilterType(column)"
+                :model-value="resolveNumericFilterValue(column.field)"
+                :min-fraction-digits="resolveMinFractionDigits(column)"
+                :max-fraction-digits="resolveMaxFractionDigits(column)"
+                input-class="generic-data-table__filter-input"
+                :placeholder="column.header"
+                @update:model-value="
+                  (value) => onColumnFilterChange(column.field, value ?? null)
+                "
+              />
+              <PrimeCalendar
+                v-else-if="resolveFilterType(column) === 'date'"
+                append-to="body"
+                :auto-z-index="true"
+                :base-z-index="3000"
+                panel-class="generic-data-table__calendar-panel"
+                :model-value="resolveDateFilterValue(column.field)"
+                show-icon
+                date-format="yy-mm-dd"
+                input-class="generic-data-table__filter-input"
+                :placeholder="column.header"
+                @update:model-value="
+                  (value) =>
+                    onColumnFilterChange(
+                      column.field,
+                      normalizeDateFilterValue(value)
+                    )
+                "
+              />
+              <PrimeInputText
+                v-else
+                :model-value="resolveTextFilterValue(column.field)"
+                :placeholder="column.header"
+                class="generic-data-table__filter-input"
+                @update:model-value="
+                  (value) => onColumnFilterChange(column.field, value || null)
                 "
               />
               <div
@@ -408,58 +467,6 @@
                 />
               </div>
               <!-- eslint-enable vue/html-indent -->
-
-              <PrimeDropdown
-                v-else-if="resolveFilterType(column) === 'boolean'"
-                :model-value="primeFilters[column.field]?.value ?? null"
-                :options="booleanFilterOptions"
-                option-label="label"
-                option-value="value"
-                show-clear
-                :placeholder="column.header"
-                class="generic-data-table__filter-input"
-                @update:model-value="
-                  (value) => onColumnFilterChange(column.field, value)
-                "
-              />
-
-              <PrimeInputNumber
-                v-else-if="isNumericFilterType(column)"
-                :model-value="resolveNumericFilterValue(column.field)"
-                :min-fraction-digits="resolveMinFractionDigits(column)"
-                :max-fraction-digits="resolveMaxFractionDigits(column)"
-                input-class="generic-data-table__filter-input"
-                :placeholder="column.header"
-                @update:model-value="
-                  (value) => onColumnFilterChange(column.field, value ?? null)
-                "
-              />
-
-              <PrimeCalendar
-                v-else-if="resolveFilterType(column) === 'date'"
-                :model-value="resolveDateFilterValue(column.field)"
-                show-icon
-                date-format="yy-mm-dd"
-                input-class="generic-data-table__filter-input"
-                :placeholder="column.header"
-                @update:model-value="
-                  (value) =>
-                    onColumnFilterChange(
-                      column.field,
-                      normalizeDateFilterValue(value)
-                    )
-                "
-              />
-
-              <PrimeInputText
-                v-else
-                :model-value="resolveTextFilterValue(column.field)"
-                :placeholder="column.header"
-                class="generic-data-table__filter-input"
-                @update:model-value="
-                  (value) => onColumnFilterChange(column.field, value || null)
-                "
-              />
             </div>
           </template>
         </Column>
@@ -1489,6 +1496,10 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
 .generic-data-table {
   --gdt-space-3: var(--app-space-3, 0.75rem);
   --gdt-space-4: var(--app-space-4, 1rem);
+  --gdt-cell-padding-y: 0.16rem;
+  --gdt-cell-padding-x: 0.35rem;
+  --gdt-font-size-sm: 0.76rem;
+  --gdt-font-size-xs: 0.68rem;
   --gdt-text-muted: var(--app-text-muted, #5f6b76);
   display: flex;
   flex-direction: column;
@@ -1523,7 +1534,7 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
 
 .generic-data-table__selection-summary {
   color: var(--gdt-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--gdt-font-size-sm);
 }
 
 .generic-data-table__option-errors-state {
@@ -1545,7 +1556,7 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
   display: grid;
   gap: 0.2rem;
   color: #8f2f2f;
-  font-size: 0.82rem;
+  font-size: var(--gdt-font-size-xs);
   line-height: 1.35;
 }
 
@@ -1564,7 +1575,7 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
   justify-content: space-between;
   gap: 0.5rem;
   color: #b63a3a;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   line-height: 1.35;
 }
 
@@ -1602,28 +1613,353 @@ defineExpose<GenericDataTableExpose<GenericDataTableRow>>({
 }
 
 .generic-data-table__id-icon-cell i {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .generic-data-table__state-message {
   padding: var(--gdt-space-4);
   text-align: center;
   color: var(--gdt-text-muted);
+  font-size: var(--gdt-font-size-sm);
 }
 
-:deep(.generic-data-table .p-datatable-tbody > tr) {
+.generic-data-table :deep(.p-datatable-table) {
+  font-size: var(--gdt-font-size-sm) !important;
+}
+
+.generic-data-table :deep(.p-datatable-thead > tr > th) {
+  padding: var(--gdt-cell-padding-y) var(--gdt-cell-padding-x) !important;
+  font-size: var(--gdt-font-size-sm) !important;
+  line-height: 1.2;
+}
+
+.generic-data-table :deep(.p-datatable-tbody > tr > td) {
+  padding: var(--gdt-cell-padding-y) var(--gdt-cell-padding-x) !important;
+  font-size: var(--gdt-font-size-sm) !important;
+  line-height: 1.2;
+}
+
+.generic-data-table :deep(.p-datatable-tfoot > tr > td) {
+  padding: var(--gdt-cell-padding-y) var(--gdt-cell-padding-x) !important;
+  font-size: var(--gdt-font-size-sm) !important;
+  line-height: 1.2;
+}
+
+.generic-data-table :deep(.p-paginator),
+.generic-data-table :deep(.p-paginator-current),
+.generic-data-table :deep(.p-paginator-pages),
+.generic-data-table :deep(.p-paginator-page),
+.generic-data-table :deep(.p-paginator-first),
+.generic-data-table :deep(.p-paginator-prev),
+.generic-data-table :deep(.p-paginator-next),
+.generic-data-table :deep(.p-paginator-last),
+.generic-data-table :deep(.p-paginator-rpp-options),
+.generic-data-table :deep(.p-paginator-rpp-options .p-dropdown-label),
+.generic-data-table :deep(.p-paginator-rpp-options .p-dropdown-trigger),
+.generic-data-table :deep(.p-paginator-rpp-options .p-dropdown-trigger-icon) {
+  font-size: var(--gdt-font-size-sm) !important;
+  font-weight: 600 !important;
+}
+
+.generic-data-table :deep(.p-paginator) {
+  padding: 0.3rem 0.35rem !important;
+  gap: 0.2rem;
+}
+
+.generic-data-table :deep(.p-paginator .p-paginator-current) {
+  line-height: 1.1 !important;
+}
+
+.generic-data-table :deep(.p-paginator .p-paginator-page),
+.generic-data-table :deep(.p-paginator .p-paginator-first),
+.generic-data-table :deep(.p-paginator .p-paginator-prev),
+.generic-data-table :deep(.p-paginator .p-paginator-next),
+.generic-data-table :deep(.p-paginator .p-paginator-last) {
+  min-width: 1.8rem !important;
+  height: 1.8rem !important;
+}
+
+.generic-data-table :deep(.p-paginator .p-paginator-rpp-options) {
+  min-height: 1.55rem !important;
+  height: 1.55rem !important;
+}
+
+.generic-data-table
+  :deep(.p-paginator .p-paginator-rpp-options .p-dropdown-label) {
+  min-height: 1.55rem !important;
+  height: 1.55rem !important;
+  font-size: var(--gdt-font-size-sm) !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  padding-left: 0.3rem !important;
+  padding-right: 0.1rem !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.generic-data-table :deep(.p-paginator .p-paginator-rpp-options .p-inputtext),
+.generic-data-table
+  :deep(.p-paginator .p-paginator-rpp-options .p-dropdown-label-container),
+.generic-data-table
+  :deep(.p-paginator .p-paginator-rpp-options .p-dropdown-trigger),
+.generic-data-table
+  :deep(.p-paginator .p-paginator-rpp-options .p-dropdown-trigger-icon) {
+  font-size: var(--gdt-font-size-sm) !important;
+  font-weight: 600 !important;
+}
+
+.generic-data-table
+  :deep(.p-paginator .p-paginator-rpp-options .p-dropdown-trigger) {
+  width: 1.35rem !important;
+  min-width: 1.35rem !important;
+  padding: 0 !important;
+}
+
+.generic-data-table
+  :deep(.p-paginator .p-paginator-rpp-options .p-dropdown-trigger-icon) {
+  font-size: 0.58rem !important;
+}
+
+.generic-data-table :deep(.p-column-title),
+.generic-data-table :deep(.p-sortable-column-icon),
+.generic-data-table :deep(.p-column-filter-element),
+.generic-data-table :deep(.p-inputtext),
+.generic-data-table :deep(.p-dropdown-label),
+.generic-data-table :deep(.p-inputnumber-input),
+.generic-data-table :deep(.p-datepicker-input-icon-container + input),
+.generic-data-table :deep(.p-tag),
+.generic-data-table :deep(.p-button),
+.generic-data-table :deep(.p-button .p-button-label) {
+  font-size: var(--gdt-font-size-sm) !important;
+  font-weight: 600 !important;
+}
+
+.generic-data-table :deep(.p-inputtext),
+.generic-data-table :deep(.p-dropdown),
+.generic-data-table :deep(.p-inputnumber-input),
+.generic-data-table :deep(.p-datepicker-input) {
+  padding-block: 0.15rem !important;
+  padding-inline: 0.35rem !important;
+}
+
+.generic-data-table :deep(.p-dropdown) {
+  min-height: 1.55rem !important;
+  height: 1.55rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.generic-data-table :deep(.p-dropdown-label-container) {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  flex: 1 1 auto;
+}
+
+.generic-data-table :deep(.p-dropdown-label) {
+  display: flex !important;
+  align-items: center !important;
+  align-self: center !important;
+  min-height: 1.55rem !important;
+  height: 1.55rem !important;
+  line-height: 1 !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0.3rem !important;
+  padding-right: 0.1rem !important;
+}
+
+.generic-data-table :deep(.p-dropdown-trigger) {
+  width: 1.35rem !important;
+  min-width: 1.35rem !important;
+  padding: 0 !important;
+}
+
+.generic-data-table :deep(.p-dropdown-trigger-icon) {
+  font-size: 0.58rem !important;
+}
+
+.generic-data-table :deep(.p-column-filter-element),
+.generic-data-table :deep(.p-inputtext),
+.generic-data-table :deep(.p-inputnumber-input),
+.generic-data-table :deep(.p-datepicker-input),
+.generic-data-table :deep(.p-dropdown),
+.generic-data-table :deep(.p-inputnumber),
+.generic-data-table :deep(.p-calendar) {
+  min-height: 1.55rem !important;
+  height: 1.55rem !important;
+}
+
+.generic-data-table :deep(.p-inputtext),
+.generic-data-table :deep(.p-inputnumber-input),
+.generic-data-table :deep(.p-datepicker-input) {
+  line-height: 1.1 !important;
+  font-weight: 600 !important;
+}
+
+.generic-data-table :deep(.p-inputnumber),
+.generic-data-table :deep(.p-calendar) {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.generic-data-table :deep(.p-calendar) {
+  width: 100%;
+}
+
+.generic-data-table :deep(.p-datepicker-input) {
+  height: 1.55rem !important;
+}
+
+.generic-data-table :deep(.p-datepicker-input-icon-container) {
+  width: 1.35rem !important;
+  min-width: 1.35rem !important;
+  height: 1.55rem !important;
+  display: flex !important;
+  align-items: center !important;
+  align-self: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+.generic-data-table :deep(.p-datepicker-dropdown),
+.generic-data-table :deep(.p-datepicker-trigger) {
+  width: 1.35rem !important;
+  min-width: 1.35rem !important;
+  height: 1.55rem !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  align-self: center !important;
+  justify-content: center !important;
+}
+
+.generic-data-table :deep(.p-datepicker-dropdown:hover),
+.generic-data-table :deep(.p-datepicker-trigger:hover),
+.generic-data-table :deep(.p-datepicker-dropdown:focus),
+.generic-data-table :deep(.p-datepicker-trigger:focus),
+.generic-data-table :deep(.p-datepicker-dropdown:focus-visible),
+.generic-data-table :deep(.p-datepicker-trigger:focus-visible) {
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+
+.generic-data-table :deep(.p-datepicker-dropdown .p-button-icon),
+.generic-data-table :deep(.p-datepicker-trigger .p-button-icon) {
+  font-size: 0.72rem !important;
+}
+
+.generic-data-table :deep(.p-datepicker-input-icon) {
+  font-size: 0.72rem !important;
+}
+
+.generic-data-table :deep(.p-dropdown-panel),
+.generic-data-table :deep(.p-dropdown-items),
+.generic-data-table :deep(.p-dropdown-item),
+.generic-data-table :deep(.p-dropdown-empty-message),
+.generic-data-table :deep(.p-select-overlay),
+.generic-data-table :deep(.p-select-list),
+.generic-data-table :deep(.p-select-option),
+.generic-data-table :deep(.p-select-empty-message) {
+  font-size: var(--gdt-font-size-sm) !important;
+  font-weight: 600 !important;
+}
+
+.generic-data-table :deep(.p-calendar),
+.generic-data-table :deep(.p-calendar .p-inputtext),
+.generic-data-table :deep(.p-datepicker-input),
+.generic-data-table :deep(.p-datepicker),
+.generic-data-table :deep(.p-datepicker-panel),
+.generic-data-table :deep(.p-datepicker table),
+.generic-data-table :deep(.p-datepicker th),
+.generic-data-table :deep(.p-datepicker td),
+.generic-data-table :deep(.p-datepicker-header),
+.generic-data-table :deep(.p-datepicker-title),
+.generic-data-table :deep(.p-datepicker-select-month),
+.generic-data-table :deep(.p-datepicker-select-year),
+.generic-data-table :deep(.p-datepicker-day),
+.generic-data-table :deep(.p-datepicker-weekday),
+.generic-data-table :deep(.p-datepicker-prev),
+.generic-data-table :deep(.p-datepicker-next),
+.generic-data-table :deep(.p-datepicker-prev-icon),
+.generic-data-table :deep(.p-datepicker-next-icon) {
+  font-size: var(--gdt-font-size-sm) !important;
+  font-weight: 600 !important;
+}
+
+.generic-data-table :deep(.p-calendar) {
+  position: relative;
+  overflow: visible !important;
+}
+
+.generic-data-table :deep(.p-datepicker),
+.generic-data-table :deep(.p-datepicker-panel) {
+  z-index: 1000 !important;
+}
+
+.generic-data-table :deep(.p-datatable-thead > tr > th),
+.generic-data-table :deep(.p-datatable-tbody > tr > td),
+.generic-data-table :deep(.p-column-filter-element),
+.generic-data-table :deep(.p-column-filter) {
+  overflow: visible !important;
+}
+
+.generic-data-table :deep(.p-datatable-tbody > tr) {
   cursor: default;
 }
 
-:deep(
-  .generic-data-table .p-datatable-tbody > tr.generic-data-table__row--clickable
-) {
+.generic-data-table
+  :deep(.p-datatable-tbody > tr.generic-data-table__row--clickable) {
   cursor: pointer;
 }
 
-:deep(
-  .generic-data-table .p-datatable-tbody > tr.generic-data-table__row--disabled
-) {
+.generic-data-table
+  :deep(.p-datatable-tbody > tr.generic-data-table__row--disabled) {
   opacity: 0.6;
+}
+</style>
+
+<style>
+.generic-data-table__dropdown-panel {
+  z-index: 3000 !important;
+}
+
+.generic-data-table__dropdown-panel .p-dropdown-items,
+.generic-data-table__dropdown-panel .p-dropdown-item,
+.generic-data-table__dropdown-panel .p-dropdown-empty-message,
+.generic-data-table__dropdown-panel .p-scroller,
+.generic-data-table__dropdown-panel .p-scroller-content {
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+}
+
+.generic-data-table__calendar-panel {
+  z-index: 3000 !important;
+}
+
+.generic-data-table__calendar-panel,
+.generic-data-table__calendar-panel table,
+.generic-data-table__calendar-panel th,
+.generic-data-table__calendar-panel td,
+.generic-data-table__calendar-panel .p-datepicker-header,
+.generic-data-table__calendar-panel .p-datepicker-title,
+.generic-data-table__calendar-panel .p-datepicker-select-month,
+.generic-data-table__calendar-panel .p-datepicker-select-year,
+.generic-data-table__calendar-panel .p-datepicker-day,
+.generic-data-table__calendar-panel .p-datepicker-weekday,
+.generic-data-table__calendar-panel .p-datepicker-prev,
+.generic-data-table__calendar-panel .p-datepicker-next,
+.generic-data-table__calendar-panel .p-datepicker-prev-icon,
+.generic-data-table__calendar-panel .p-datepicker-next-icon {
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
 }
 </style>

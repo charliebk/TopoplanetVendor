@@ -27,10 +27,10 @@ const resolveMatchMode = <Row extends GenericDataTableRow>(
 
 const normalizeFilterValue = <Row extends GenericDataTableRow>(
   column: GenericDataTableColumn<Row> | undefined,
-  value: GenericDataTableFilterValue
+  value: GenericDataTableFilterValue | undefined
 ): unknown => {
   if (!column) {
-    return value
+    return value ?? null
   }
 
   if (column.paramTransform) {
@@ -39,7 +39,7 @@ const normalizeFilterValue = <Row extends GenericDataTableRow>(
 
   const filterType = column.filterType ?? column.type ?? 'text'
 
-  if (value === null || value === '') {
+  if (value === null || value === undefined || value === '') {
     return null
   }
 
@@ -52,6 +52,8 @@ const normalizeFilterValue = <Row extends GenericDataTableRow>(
 
   if (
     (filterType === 'number' ||
+      filterType === 'integer' ||
+      filterType === 'percent' ||
       filterType === 'select' ||
       filterType === 'list') &&
     typeof value === 'string' &&
@@ -99,7 +101,11 @@ const buildFilterRecord = <Row extends GenericDataTableRow>(
       continue
     }
 
-    if (filterMeta.value === '' || filterMeta.value === null) {
+    if (
+      filterMeta.value === '' ||
+      filterMeta.value === null ||
+      filterMeta.value === undefined
+    ) {
       continue
     }
 
@@ -107,7 +113,11 @@ const buildFilterRecord = <Row extends GenericDataTableRow>(
     const queryField = column ? resolveBackendField(column) : field
     const normalizedValue = normalizeFilterValue(column, filterMeta.value)
 
-    if (normalizedValue === '' || normalizedValue === null) {
+    if (
+      normalizedValue === '' ||
+      normalizedValue === null ||
+      normalizedValue === undefined
+    ) {
       continue
     }
 
@@ -212,18 +222,20 @@ export const useGenericDataTableQuery = <Row extends GenericDataTableRow>(
 
   const setFilterValue = (
     field: string,
-    value: GenericDataTableFilterValue
+    value: GenericDataTableFilterValue | undefined
   ): GenericDataTableQuery => {
     const currentFilter = primeFilters.value[field] ?? {
       value: null,
       matchMode: 'contains' as GenericDataTableMatchMode
     }
 
+    const normalizedValue = value ?? null
+
     primeFilters.value = {
       ...primeFilters.value,
       [field]: {
         ...currentFilter,
-        value
+        value: normalizedValue
       }
     }
 

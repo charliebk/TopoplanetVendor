@@ -593,7 +593,7 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
     header: 'Actions',
     type: 'actions',
     align: 'center',
-    minWidth: '14rem',
+    minWidth: '7rem',
     actions: [
       {
         key: 'inspect',
@@ -602,25 +602,6 @@ const demoColumns: Array<GenericDataTableColumn<DemoAuditRow>> = [
         tooltip: 'Open the audit detail panel',
         class:
           'project-main__action-button project-main__action-button--inspect'
-      },
-      {
-        key: 'approve',
-        icon: 'pi pi-check',
-        label: 'Approve',
-        tooltip: 'Approve only active audits with compliance >= 90%',
-        class:
-          'project-main__action-button project-main__action-button--approve',
-        disabled: (row) => row.compliance < 90
-      },
-      {
-        key: 'archive',
-        icon: 'pi pi-box',
-        label: 'Archive',
-        tooltip: 'Archive audits that came from legacy sources',
-        class:
-          'project-main__action-button project-main__action-button--archive',
-        severity: 'danger',
-        disabled: (row) => row.originActive
       }
     ]
   }
@@ -802,6 +783,16 @@ const applyDemoQuery = (query: GenericDataTableQuery): DemoAuditRow[] => {
         column.type === 'integer' ||
         column.type === 'percent'
       ) {
+        const numericRawValue = Number(rawValue)
+        const numericFilterValue = Number(filterValue)
+
+        if (
+          Number.isFinite(numericRawValue) &&
+          Number.isFinite(numericFilterValue)
+        ) {
+          return numericRawValue === numericFilterValue
+        }
+
         return String(rawValue) === String(filterValue)
       }
 

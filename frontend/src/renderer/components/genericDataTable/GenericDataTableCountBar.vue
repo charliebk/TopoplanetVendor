@@ -77,6 +77,7 @@ const excludedValue = computed(() => {
 .generic-data-table-count-bar {
   --gdt-space-3: var(--app-space-3, 0.75rem);
   --gdt-space-4: var(--app-space-4, 1rem);
+  --gdt-font-size-sm: 0.74rem;
   --gdt-border-subtle: var(--app-border-subtle, rgba(15, 23, 42, 0.12));
   --gdt-radius-panel: var(--app-radius-panel, 0.75rem);
   --gdt-surface-soft: var(--app-surface-soft, #f8fafc);
@@ -99,7 +100,7 @@ const excludedValue = computed(() => {
   gap: 0.85rem;
   flex-wrap: wrap;
   color: var(--gdt-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--gdt-font-size-sm);
 }
 
 .generic-data-table-count-bar__metric strong {
@@ -111,5 +112,9 @@ const excludedValue = computed(() => {
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
+}
+
+:deep(.generic-data-table-count-bar .p-button .p-button-label) {
+  font-size: var(--gdt-font-size-sm) !important;
 }
 </style>
