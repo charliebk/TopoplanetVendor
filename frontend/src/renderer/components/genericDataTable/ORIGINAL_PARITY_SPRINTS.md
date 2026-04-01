@@ -253,7 +253,7 @@ Criterio de cierre:
 Resultado aplicado en el modulo:
 
 - V1 incorpora pruebas unitarias para tipos publicos, reactividad de query y helpers de acciones.
-- `ProjectMain.vue` y `ProjectModuleView.vue` dejan ejemplos ejecutables dentro de vistas reales del proyecto.
+- `ProjectMain.vue`, `ProjectVendorsView.vue` y `ProjectProductsView.vue` dejan ejemplos ejecutables dentro de vistas reales del proyecto.
 - La carpeta incorpora `PORTABILITY_CHECKLIST.md` con una receta corta y verificable de copia.
 - La carpeta incorpora `VERSIONING.md` con reglas de evolucion interna para V1.
 - Los textos base se concentran en `generic-data-table.locale.ts` y los estilos ya incluyen fallbacks locales para no depender del CSS global del proyecto anfitrion.

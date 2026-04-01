@@ -34,7 +34,7 @@ const normalizeFilterValue = <Row extends GenericDataTableRow>(
   }
 
   if (column.paramTransform) {
-    return column.paramTransform(value)
+    return column.paramTransform(value ?? null)
   }
 
   const filterType = column.filterType ?? column.type ?? 'text'

@@ -181,7 +181,7 @@ Compatibilidad asumida por implementacion actual:
 ## Ejemplos reales en el proyecto
 
 - `ProjectMain.vue` sigue funcionando como demo exhaustiva de parity y regresion.
-- `ProjectModuleView.vue` ahora renderiza ejemplos reales en las rutas `/project/vendors` y `/project/products`, ambos consumiendo la API publica de V1 sin wrappers legacy.
+- `ProjectVendorsView.vue` y `ProjectProductsView.vue` ahora renderizan ejemplos reales en las rutas `/project/vendors` y `/project/products`, ambos consumiendo la API publica del componente sin wrappers legacy.
 
 ### API de seleccion
 

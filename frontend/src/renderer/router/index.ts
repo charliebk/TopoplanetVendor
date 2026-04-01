@@ -1,7 +1,11 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import MainView from '@/renderer/views/MainView/MainView.vue'
 import ProjectMain from '@/renderer/views/ProjectMain/ProjectMain.vue'
-import ProjectModuleView from '@/renderer/views/ProjectModules/ProjectModuleView.vue'
+import ProjectLogsView from '@/renderer/views/ProjectModules/ProjectLogsView.vue'
+import ProjectProductsView from '@/renderer/views/ProjectModules/ProjectProductsView.vue'
+import ProjectQuestionsView from '@/renderer/views/ProjectModules/ProjectQuestionsView.vue'
+import ProjectSettingsView from '@/renderer/views/ProjectModules/ProjectSettingsView.vue'
+import ProjectVendorsView from '@/renderer/views/ProjectModules/ProjectVendorsView.vue'
 
 const workspaceChromeMeta = {
   layout: 'fixed',
@@ -46,7 +50,7 @@ export default createRouter({
     },
     {
       path: '/project/logs',
-      component: ProjectModuleView,
+      component: ProjectLogsView,
       meta: {
         titleKey: 'title.projectLogs',
         ...workspaceChromeMeta,
@@ -56,7 +60,7 @@ export default createRouter({
     },
     {
       path: '/project/settings',
-      component: ProjectModuleView,
+      component: ProjectSettingsView,
       meta: {
         titleKey: 'title.projectSettings',
         ...workspaceChromeMeta,
@@ -66,7 +70,7 @@ export default createRouter({
     },
     {
       path: '/project/vendors',
-      component: ProjectModuleView,
+      component: ProjectVendorsView,
       meta: {
         titleKey: 'title.projectVendors',
         ...workspaceChromeMeta,
@@ -76,7 +80,7 @@ export default createRouter({
     },
     {
       path: '/project/products',
-      component: ProjectModuleView,
+      component: ProjectProductsView,
       meta: {
         titleKey: 'title.projectProducts',
         ...workspaceChromeMeta,
@@ -86,7 +90,7 @@ export default createRouter({
     },
     {
       path: '/project/questions',
-      component: ProjectModuleView,
+      component: ProjectQuestionsView,
       meta: {
         titleKey: 'title.projectQuestions',
         ...workspaceChromeMeta,
